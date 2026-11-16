@@ -205,6 +205,16 @@ function buildRow(rec: any) {
   };
 }
 
+// Overwrite the agent/office details just upserted (copied from the Property
+// payload, which Spark says can be stale) with the replicated Member/Office
+// values. See syncMembersOffices.
+async function refreshAttribution(keys: string[]) {
+  for (let i = 0; i < keys.length; i += 1000) {
+    const { error } = await supabaseAdmin.rpc('refresh_listing_attribution', { p_keys: keys.slice(i, i + 1000) });
+    if (error) { console.error('[syncListingsReso] refresh_listing_attribution:', error.message); return; }
+  }
+}
+
 async function loadCursor() {
   const { data } = await supabaseAdmin.from('sync_cache').select('cache_value').eq('cache_key', CURSOR_KEY).maybeSingle();
   return data?.cache_value || {};
@@ -285,6 +295,7 @@ serve(async (req) => {
         const { error } = await supabaseAdmin.from('properties').upsert(upserts.slice(i, i + DB_BATCH), { onConflict: 'mls_number' });
         if (error) throw new Error(`Upsert error: ${error.message}`);
       }
+      await refreshAttribution(upserts.map((r: any) => r.listing_key).filter(Boolean));
       let deleted = 0;
       for (let i = 0; i < deletes.length; i += 500) {
         const { error } = await supabaseAdmin.from('properties').delete().in('listing_key', deletes.slice(i, i + 500));
@@ -342,6 +353,7 @@ serve(async (req) => {
         if (error) throw new Error(`Upsert error: ${error.message}`);
         synced += rows.slice(i, i + DB_BATCH).length;
       }
+      await refreshAttribution(rows.map((r: any) => r.listing_key).filter(Boolean));
       nextUrl = data['@odata.nextLink'] || null;
       pages++;
     }
