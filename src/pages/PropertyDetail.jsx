@@ -219,6 +219,15 @@ export default function PropertyDetail() {
     staleTime: 60000  // cache for 1 minute — same property page revisits within a minute reuse the cached result
   });
 
+  // Tab title per listing (share crawlers get theirs from /middleware.js).
+  useEffect(() => {
+    if (!property) return undefined;
+    const previous = document.title;
+    const price = property.price ? `$${Math.round(property.price).toLocaleString('en-US')} · ` : '';
+    document.title = `${price}${property.address}, ${property.city} · Crandell Real Estate Team`;
+    return () => { document.title = previous; };
+  }, [property]);
+
   // Check if saved
   useEffect(() => {
     if (user && propertyId) {
