@@ -1,5 +1,6 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { supabaseAdmin, corsHeaders, jsonResponse } from '../_shared/supabaseAdmin.ts';
+import { SPARK_V1_BASE, sparkFetch } from '../_shared/spark.ts';
 
 /**
  * syncSparkInternalListings — Internal analytics sync for HomeFind AI
@@ -38,7 +39,7 @@ import { supabaseAdmin, corsHeaders, jsonResponse } from '../_shared/supabaseAdm
  *   from scratch, or { reset_pass: 'closed' } to restart a single pass.
  */
 
-const SPARK_REPL = 'https://replication.sparkapi.com/v1';
+const SPARK_REPL = SPARK_V1_BASE;
 const DB_BATCH = 100;
 const SPARK_LIMIT = 250;
 const MAX_PAGES = 4; // 4 × 250 = 1000 listings per invocation, fits 60s timeout
@@ -442,13 +443,7 @@ serve(async (req) => {
       const url = buildUrl(pass, currentSkipToken);
       console.log(`[InternalSync] ${pass} page ${page + 1}...`);
 
-      const res = await fetch(url, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          Accept: 'application/json',
-          'User-Agent': 'HomeFind-AI-Internal/1.0 (Supabase Edge Function)',
-        },
-      });
+      const res = await sparkFetch(url, token, { retries: 1 });
 
       if (res.status === 429) {
         console.log('[InternalSync] Rate limited — saving cursor and stopping');

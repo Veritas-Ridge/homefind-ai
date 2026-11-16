@@ -1,4 +1,5 @@
 import { getServiceClient, getUser, isAdminProfile, corsHeaders, jsonResponse } from '../_shared/supabaseAdmin.ts';
+import { SPARK_RESO_BASE, sparkFetch } from '../_shared/spark.ts';
 
 Deno.serve(async (req) => {
   // Handle CORS preflight
@@ -17,59 +18,51 @@ Deno.serve(async (req) => {
       return jsonResponse({ error: 'Admin access required' }, 403);
     }
 
-    // Read environment variables
-    const sparkApiKey = Deno.env.get('SPARK_API_KEY');
-    const sparkAccessToken = Deno.env.get('SPARK_ACCESS_TOKEN') ||
-                             Deno.env.get('SPARK_OAUTH_ACCESS_TOKEN');
+    // Our key is a Spark bearer-token replication key. Per Spark docs it only
+    // works on replication.sparkapi.com, so test the exact endpoint the syncs use.
+    const sparkAccessToken = Deno.env.get('SPARK_OAUTH_ACCESS_TOKEN') ||
+                             Deno.env.get('SPARK_ACCESS_TOKEN');
 
-    if (!sparkApiKey && !sparkAccessToken) {
+    if (!sparkAccessToken) {
       return jsonResponse({
         configured: false,
         connection_successful: false,
-        status: 'No Spark API credentials configured',
+        status: 'No Spark access token configured (SPARK_OAUTH_ACCESS_TOKEN)',
         listings_available: false,
         sample_listing: null,
       });
     }
 
-    // Test connection to Spark Replication API
-    const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
-    };
-
-    if (sparkAccessToken) {
-      headers['Authorization'] = `Bearer ${sparkAccessToken}`;
-    } else if (sparkApiKey) {
-      headers['X-API-Key'] = sparkApiKey;
-    }
-
     try {
-      const testResponse = await fetch(
-        'https://api.sparkplatform.com/v1/listings?pageSize=1&_filter=ListModificationTimestamp%3E=2024-01-01',
-        {
-          method: 'GET',
-          headers,
-        }
-      );
+      const url = `${SPARK_RESO_BASE}/Property?$top=1&$count=true` +
+        `&$select=ListingKey,ListingId,StandardStatus,ListPrice,City,ModificationTimestamp` +
+        `&$filter=${encodeURIComponent("StandardStatus eq 'Active'")}`;
+      const testResponse = await sparkFetch(url, sparkAccessToken, { retries: 0 });
 
       if (!testResponse.ok) {
+        const detail = (await testResponse.text()).slice(0, 300);
         return jsonResponse({
           configured: true,
           connection_successful: false,
-          status: `Connection failed with status ${testResponse.status}`,
+          status: testResponse.status === 429
+            ? 'Rate limited by Spark (HTTP 429). Try again in a few minutes.'
+            : `Connection failed with status ${testResponse.status}`,
+          detail,
           listings_available: false,
           sample_listing: null,
         });
       }
 
       const data = await testResponse.json();
-      const listings = data.D?.Results || data.listings || [];
+      const listings = data.value || [];
       const sampleListing = listings.length > 0 ? listings[0] : null;
 
       return jsonResponse({
         configured: true,
         connection_successful: true,
         status: 'Connected successfully',
+        endpoint: SPARK_RESO_BASE,
+        active_listing_count: data['@odata.count'] ?? null,
         listings_available: listings.length > 0,
         sample_listing: sampleListing,
       });

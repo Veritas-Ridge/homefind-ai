@@ -1,5 +1,6 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { supabaseAdmin, corsHeaders, jsonResponse } from '../_shared/supabaseAdmin.ts';
+import { SPARK_RESO_BASE, sparkFetch } from '../_shared/spark.ts';
 
 /**
  * syncOpenHouses — fills properties.open_house_date / _end / _remarks from the
@@ -15,7 +16,7 @@ import { supabaseAdmin, corsHeaders, jsonResponse } from '../_shared/supabaseAdm
  * open house has passed or was removed from the feed are cleared.
  */
 
-const RESO_OPEN_HOUSE = 'https://replication.sparkapi.com/Reso/OData/OpenHouse';
+const RESO_OPEN_HOUSE = `${SPARK_RESO_BASE}/OpenHouse`;
 const PAGE_SIZE = 200;
 const MAX_PAGES = 50;
 const UPDATE_CONCURRENCY = 10;
@@ -59,7 +60,7 @@ serve(async (req) => {
 
   try {
     while (nextUrl && pages < MAX_PAGES) {
-      const res = await fetch(nextUrl, { headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' } });
+      const res = await sparkFetch(nextUrl, token);
       if (!res.ok) {
         return jsonResponse({ error: `RESO OpenHouse ${res.status}`, detail: (await res.text()).slice(0, 300) }, 502);
       }
