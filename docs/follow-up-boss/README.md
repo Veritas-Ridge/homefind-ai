@@ -191,6 +191,13 @@ Full endpoint by endpoint detail (every param, body field, enum, example) lives 
 6. **Daily summary notes ignore the notes limit.** The bulk loop posts notes back to back; the notes context allows 10 per 10s. A 429 is logged as done and the summary is lost. Throttle and retry on 429.
 7. **No UTM capture.** We never send the `campaign` object, so FUB's marketing/source reports can't attribute HomeFind leads to ads or channels.
 
+**Status (branch `claude/sleepy-wright-ujdbh2`)**
+
+* Fixed 1 to 7 above. All FUB calls now go through `fubFetch` in `_shared/fub.ts` (system headers, 429 `Retry-After`, 5xx backoff, notes spacing).
+* Webhooks: `fubWebhook` (receiver, verifies `FUB-Signature`), `processFubWebhooks` (cron worker), `fubWebhooks` (status / register / unregister). Data lands in `fub_contacts` (per app user: agent, stage, tags, contacted) and `fub_users` (agents).
+* Attribution uses the `profiles.attribution` approach from `claude/awesome-gauss-shvn6b`, sent as the FUB `campaign` block.
+* Needed in Supabase secrets: `FOLLOW_UP_BOSS_API_KEY` (account **owner** key), `FUB_SYSTEM`, `FUB_SYSTEM_KEY` (from system registration). The admin dashboard's "Follow Up Boss Webhooks" card shows what's missing.
+
 **Biggest leverage opportunities**
 
 * **`Viewed Page` + `campaign` data:** full website journey and ad attribution in FUB.

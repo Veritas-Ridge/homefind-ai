@@ -54,6 +54,21 @@ export async function requireAdmin(req: Request) {
   return { user, error: null };
 }
 
+// True when the caller presents the service-role JWT (pg_cron jobs). Only
+// trust this on functions deployed with verify_jwt on, where the gateway has
+// already checked the signature.
+export function isServiceRole(req: Request): boolean {
+  const token = (req.headers.get('Authorization') ?? '').replace(/^Bearer\s+/i, '');
+  const payload = token.split('.')[1];
+  if (!payload) return false;
+  try {
+    const claims = JSON.parse(atob(payload.replace(/-/g, '+').replace(/_/g, '/')));
+    return claims.role === 'service_role';
+  } catch {
+    return false;
+  }
+}
+
 // Convenience: direct admin client export
 export const supabaseAdmin = createClient(
   Deno.env.get('SUPABASE_URL') ?? '',

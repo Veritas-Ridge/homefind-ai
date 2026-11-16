@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { invokeFunction } from '@/api/supabaseClient';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -23,7 +23,9 @@ export default function FollowUpBossContacts() {
       const result = await invokeFunction('syncFollowUpBossContacts', {});
       return result;
     },
-    refetchInterval: 30000, // Refresh every 30 seconds
+    // Each load pages through FUB contacts, so don't poll; refresh on demand.
+    staleTime: 5 * 60 * 1000,
+    refetchOnWindowFocus: false,
   });
 
   const handleInvite = async (contact) => {

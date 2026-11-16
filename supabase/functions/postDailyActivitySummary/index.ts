@@ -1,5 +1,6 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
-import { supabaseAdmin, corsHeaders, jsonResponse } from '../_shared/supabaseAdmin.ts';
+import { supabaseAdmin, corsHeaders, jsonResponse, isServiceRole, requireAdmin } from '../_shared/supabaseAdmin.ts';
+import { createFubNote } from '../_shared/fub.ts';
 
 /**
  * postDailyActivitySummary
@@ -11,7 +12,10 @@ import { supabaseAdmin, corsHeaders, jsonResponse } from '../_shared/supabaseAdm
  *   3. POST it as a note to the user's FUB contact via POST /v1/notes
  *   4. Log the result in daily_summary_log to enforce once-per-day-per-user
  *
- * Triggered by:
+ * Notes go through the shared FUB client, which spaces them to stay under
+ * FUB's 10-per-10-seconds notes limit and waits out any 429.
+ *
+ * Triggered by (service-role key or an app admin only):
  *   - pg_cron daily at 15:00 UTC (8 AM Arizona)
  *   - Manual POST with { "userId": "..." } to test a single user
  *   - Manual POST with { "force": true } to bypass the once-per-day check
@@ -140,45 +144,27 @@ async function generateSummary(prompt: string, openaiKey: string): Promise<strin
   return data.choices?.[0]?.message?.content?.trim() || '';
 }
 
-async function postNoteToFub(personId: string, body: string, fubKey: string): Promise<{ ok: boolean; status: number; noteId?: string; error?: string }> {
-  const auth = btoa(`${fubKey}:`);
-  const res = await fetch('https://api.followupboss.com/v1/notes', {
-    method: 'POST',
-    headers: {
-      Authorization: `Basic ${auth}`,
-      'Content-Type': 'application/json',
-      'X-System': 'HomeFind-AI',
-      'X-System-Key': 'crandell-real-estate',
-    },
-    body: JSON.stringify({
-      personId: parseInt(personId, 10),
-      subject: `HomeFind AI Daily Summary — ${new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`,
-      body,
-      isHtml: false,
-    }),
-  });
-  const text = await res.text();
-  if (!res.ok) return { ok: false, status: res.status, error: text.slice(0, 300) };
-  try {
-    const j = JSON.parse(text);
-    return { ok: true, status: res.status, noteId: String(j?.id || j?.note?.id || '') };
-  } catch {
-    return { ok: true, status: res.status };
-  }
+function postNoteToFub(personId: string, body: string) {
+  const subject = `HomeFind AI Daily Summary — ${new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`;
+  return createFubNote(personId, subject, body);
 }
 
-async function processOneUser(userId: string, force: boolean, openaiKey: string, fubKey: string) {
+// A note that failed for a reason that may clear up (rate limit, FUB outage,
+// network) is worth retrying on a later run the same day.
+const isRetryableStatus = (status: number | null) => status == null || status === 0 || status === 429 || status >= 500;
+
+async function processOneUser(userId: string, force: boolean, openaiKey: string) {
   const today = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
 
   // Idempotency check
   if (!force) {
     const { data: existing } = await supabaseAdmin
       .from('daily_summary_log')
-      .select('id')
+      .select('id, fub_post_status')
       .eq('user_id', userId)
       .eq('summary_date', today)
       .maybeSingle();
-    if (existing) {
+    if (existing && !isRetryableStatus(existing.fub_post_status)) {
       return { userId, skipped: true, reason: 'already_summarized_today' };
     }
   }
@@ -193,10 +179,11 @@ async function processOneUser(userId: string, force: boolean, openaiKey: string,
   const summary = await generateSummary(prompt, openaiKey);
   if (!summary) return { userId, skipped: true, reason: 'empty_summary' };
 
-  const fub = await postNoteToFub(bundle.fubContactId, summary, fubKey);
+  const fub = await postNoteToFub(bundle.fubContactId, summary);
 
-  // Always log, even on FUB failure — so we don't retry forever
-  const { error: logError } = await supabaseAdmin.from('daily_summary_log').insert({
+  // Always log. Permanent failures (bad contact id etc.) are not retried;
+  // rate limits and outages are retried by the next run the same day.
+  const { error: logError } = await supabaseAdmin.from('daily_summary_log').upsert({
     user_id: userId,
     fub_contact_id: bundle.fubContactId,
     summary_date: today,
@@ -204,7 +191,7 @@ async function processOneUser(userId: string, force: boolean, openaiKey: string,
     fub_note_id: fub.noteId || null,
     fub_post_status: fub.status,
     activity_count: bundle.totalActivity,
-  });
+  }, { onConflict: 'user_id,summary_date' });
 
   return {
     userId,
@@ -222,6 +209,13 @@ serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
 
   try {
+    // Deploy with verify_jwt ON (the gateway checks the signature), then
+    // allow only the cron's service-role token or a signed-in app admin.
+    if (!isServiceRole(req)) {
+      const { error } = await requireAdmin(req);
+      if (error) return error;
+    }
+
     const openaiKey = Deno.env.get('OPENAI_API_KEY');
     const fubKey = Deno.env.get('FOLLOW_UP_BOSS_API_KEY');
     if (!openaiKey) throw new Error('OPENAI_API_KEY not set');
@@ -234,7 +228,7 @@ serve(async (req) => {
 
     // Single-user mode (for testing)
     if (targetUserId) {
-      const result = await processOneUser(targetUserId, force, openaiKey, fubKey);
+      const result = await processOneUser(targetUserId, force, openaiKey);
       return jsonResponse({ mode: 'single', result });
     }
 
@@ -254,7 +248,7 @@ serve(async (req) => {
     const results: any[] = [];
     for (const id of candidateIds) {
       try {
-        const r = await processOneUser(id, force, openaiKey, fubKey);
+        const r = await processOneUser(id, force, openaiKey);
         results.push(r);
       } catch (err: any) {
         results.push({ userId: id, error: err.message });
@@ -274,6 +268,6 @@ serve(async (req) => {
     return jsonResponse(summary);
   } catch (err: any) {
     console.error('postDailyActivitySummary error:', err);
-    return jsonResponse({ error: err.message, stack: err.stack }, 500);
+    return jsonResponse({ error: err.message }, 500);
   }
 });

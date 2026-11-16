@@ -1,21 +1,256 @@
 // ============================================================================
-// Follow Up Boss event sender
+// Follow Up Boss client
 // ----------------------------------------------------------------------------
-// Every FUB write in the app goes through here as a POST /v1/events, which is
-// the endpoint FUB runs lead routing, dedupe (by email/phone) and action plans
-// on. Rows come from public.fub_events (the outbox); see the
-// fub_event_pipeline migration for how they get there.
+// Every FUB call in the app goes through fubFetch here, so auth, the
+// registered-system headers, rate limits and retries are handled once.
+//
+// Lead activity is sent as POST /v1/events (the only endpoint FUB runs lead
+// routing, dedupe and action plans on). Rows come from public.fub_events (the
+// outbox); see the fub_event_pipeline migration for how they get there.
+//
+// Env:
+//   FOLLOW_UP_BOSS_API_KEY  owner/admin API key (Basic auth username)
+//   FUB_SYSTEM              registered system name (X-System)
+//   FUB_SYSTEM_KEY          registered system key (X-System-Key); also the
+//                           secret FUB signs webhooks with
+// Register a system at https://apps.followupboss.com/system-registration.
 // ============================================================================
 import { supabaseAdmin } from './supabaseAdmin.ts';
 
-const FUB_BASE = 'https://api.followupboss.com/v1';
+export const FUB_BASE = 'https://api.followupboss.com/v1';
 const SOURCE = 'HomeFind AI';
 const SITE_URL = 'https://search.crandellrealestate.com';
 const BASE_TAGS = ['HomeFind AI'];
 
-// Backoff for retryable failures (429, 5xx, network). After the last step the
-// event is marked failed so a bad key can't loop forever.
+// Backoff for retryable outbox failures (429, 5xx, network). After the last
+// step the event is marked failed so a bad key can't loop forever.
 const RETRY_DELAYS_MIN = [1, 5, 15, 60, 240];
+
+// Fields we read for the contact mirror (GET /people omits most by default).
+export const PERSON_FIELDS = [
+  'id', 'firstName', 'lastName', 'emails', 'phones', 'stage', 'stageId', 'tags', 'contacted',
+  'assignedUserId', 'assignedTo', 'assignedLenderId', 'assignedLenderName', 'updated', 'created',
+].join(',');
+
+// ----------------------------------------------------------------------------
+// HTTP
+// ----------------------------------------------------------------------------
+
+export function fubSystemName() {
+  return Deno.env.get('FUB_SYSTEM') || 'HomeFind-AI';
+}
+
+export function fubSystemKey() {
+  return Deno.env.get('FUB_SYSTEM_KEY') || '';
+}
+
+let warnedNoSystemKey = false;
+
+export function fubHeaders(apiKey = Deno.env.get('FOLLOW_UP_BOSS_API_KEY') ?? '') {
+  const headers: Record<string, string> = {
+    Authorization: `Basic ${btoa(apiKey + ':')}`,
+    'Content-Type': 'application/json',
+    'X-System': fubSystemName(),
+  };
+  const key = fubSystemKey();
+  if (key) headers['X-System-Key'] = key;
+  else if (!warnedNoSystemKey) {
+    warnedNoSystemKey = true;
+    console.warn('[fub] FUB_SYSTEM_KEY is not set: half rate limits, and webhooks/text logging/automations are unavailable');
+  }
+  return headers;
+}
+
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+// The notes context allows 10 requests per 10s. Space note writes from this
+// isolate so bulk jobs (daily summary, saved search alerts) stay under it.
+const NOTE_SPACING_MS = 1100;
+let lastNoteAt = 0;
+
+export interface FubFetchOptions {
+  apiKey?: string;
+  // Retries for 429 and 5xx (network errors included). 0 = single attempt.
+  retries?: number;
+  // Longest we'll honor a Retry-After before giving up and returning the 429.
+  maxWaitMs?: number;
+}
+
+// fetch() against the FUB API. `path` is relative to /v1 or a full FUB URL
+// (webhook payloads hand us full URIs). Honors Retry-After on 429 and backs
+// off on 5xx. Returns the final Response; throws only if every attempt was a
+// network error.
+export async function fubFetch(path: string, init: RequestInit = {}, opts: FubFetchOptions = {}): Promise<Response> {
+  const apiKey = opts.apiKey ?? Deno.env.get('FOLLOW_UP_BOSS_API_KEY');
+  if (!apiKey) throw new Error('FOLLOW_UP_BOSS_API_KEY not set');
+  const url = path.startsWith('http') ? path : `${FUB_BASE}${path.startsWith('/') ? '' : '/'}${path}`;
+  if (!url.startsWith(FUB_BASE)) throw new Error(`refusing non-FUB url: ${url}`);
+
+  const retries = opts.retries ?? 3;
+  const maxWaitMs = opts.maxWaitMs ?? 30_000;
+  const isNote = new URL(url).pathname.startsWith('/v1/notes');
+  let lastErr: unknown;
+
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    if (isNote) {
+      const wait = lastNoteAt + NOTE_SPACING_MS - Date.now();
+      if (wait > 0) await sleep(wait);
+      lastNoteAt = Date.now();
+    }
+
+    let res: Response;
+    try {
+      res = await fetch(url, { ...init, headers: { ...fubHeaders(apiKey), ...(init.headers ?? {}) } });
+    } catch (err) {
+      lastErr = err;
+      if (attempt < retries) { await sleep(backoffMs(attempt)); continue; }
+      throw err;
+    }
+
+    if (res.status === 429 && attempt < retries) {
+      const retryAfter = Number(res.headers.get('Retry-After'));
+      const waitMs = Number.isFinite(retryAfter) && retryAfter > 0 ? retryAfter * 1000 : backoffMs(attempt);
+      if (waitMs > maxWaitMs) return res;
+      await res.body?.cancel();
+      console.warn(`[fub] 429 on ${new URL(url).pathname} (${res.headers.get('X-RateLimit-Context') ?? '?'}), waiting ${waitMs}ms`);
+      await sleep(waitMs);
+      continue;
+    }
+    if (res.status >= 500 && attempt < retries) {
+      await res.body?.cancel();
+      await sleep(backoffMs(attempt));
+      continue;
+    }
+    return res;
+  }
+  throw lastErr ?? new Error('fubFetch: retries exhausted');
+}
+
+// Truncated exponential backoff with jitter, as FUB's error docs recommend.
+function backoffMs(attempt: number) {
+  return Math.min(2 ** attempt * 1000 + Math.random() * 1000, 16_000);
+}
+
+// fubFetch + JSON body; returns { ok, status, data, error }.
+export async function fubJson<T = any>(path: string, init: RequestInit = {}, opts: FubFetchOptions = {}) {
+  const res = await fubFetch(path, init, opts);
+  const text = await res.text();
+  let data: T | null = null;
+  try { data = text ? JSON.parse(text) : null; } catch { /* non-JSON body */ }
+  const error = res.ok ? undefined : ((data as any)?.errorMessage ?? text.slice(0, 500)) || res.statusText;
+  return { ok: res.ok, status: res.status, data, error };
+}
+
+// ----------------------------------------------------------------------------
+// Mirror: FUB person → public.fub_contacts (+ profiles.fub_contact_id)
+// ----------------------------------------------------------------------------
+
+function personEmails(person: Record<string, any>): string[] {
+  return (person.emails ?? [])
+    .map((e: any) => (typeof e === 'string' ? e : e?.value))
+    .filter((e: unknown): e is string => typeof e === 'string' && e.includes('@'))
+    .map((e: string) => e.trim().toLowerCase());
+}
+
+// Record a FUB person against the matching app user, if there is one. Matches
+// on the stored fub_contact_id first, then on email. Team accounts are never
+// linked. Returns the profile id it wrote, or null if the person isn't one of
+// our users.
+export async function mirrorFubPerson(person: Record<string, any>): Promise<string | null> {
+  if (person?.id == null) return null;
+  const fubId = String(person.id);
+
+  let { data: profile } = await supabaseAdmin
+    .from('profiles')
+    .select('id, fub_contact_id, role, is_user_admin')
+    .eq('fub_contact_id', fubId)
+    .maybeSingle();
+
+  if (!profile) {
+    const emails = personEmails(person);
+    if (emails.length === 0) return null;
+    const { data } = await supabaseAdmin
+      .from('profiles')
+      .select('id, fub_contact_id, role, is_user_admin')
+      .in('email', emails)
+      .limit(1);
+    profile = data?.[0] ?? null;
+    // Already linked to a different FUB person (e.g. a duplicate contact in
+    // FUB): keep the existing link rather than flip-flopping between them.
+    if (profile?.fub_contact_id && profile.fub_contact_id !== fubId) return null;
+  }
+
+  if (!profile || profile.role === 'admin' || profile.is_user_admin) return null;
+
+  if (profile.fub_contact_id !== fubId) {
+    await supabaseAdmin.from('profiles').update({ fub_contact_id: fubId }).eq('id', profile.id);
+  }
+
+  const num = (v: unknown) => (v == null || v === '' || Number.isNaN(Number(v)) ? null : Number(v));
+  const { error } = await supabaseAdmin.from('fub_contacts').upsert({
+    profile_id: profile.id,
+    fub_person_id: Number(fubId),
+    stage: person.stage ?? null,
+    stage_id: num(person.stageId),
+    assigned_user_id: num(person.assignedUserId) || null,
+    assigned_to: person.assignedTo || null,
+    assigned_lender_id: num(person.assignedLenderId) || null,
+    assigned_lender_name: person.assignedLenderName || null,
+    tags: Array.isArray(person.tags) ? person.tags : [],
+    contacted: person.contacted == null ? null : Boolean(Number(person.contacted)),
+    fub_updated_at: person.updated ?? null,
+    synced_at: new Date().toISOString(),
+  });
+  if (error) console.error('[fub] fub_contacts upsert failed:', error.message);
+
+  if (num(person.assignedUserId)) await ensureFubUser(Number(person.assignedUserId));
+  if (num(person.assignedLenderId)) await ensureFubUser(Number(person.assignedLenderId));
+  return profile.id;
+}
+
+// Unlink every app user mirrored from these FUB people (peopleDeleted).
+export async function unlinkFubPeople(ids: Array<number | string>) {
+  const strIds = ids.map(String);
+  await supabaseAdmin.from('fub_contacts').delete().in('fub_person_id', ids.map(Number));
+  await supabaseAdmin.from('profiles').update({ fub_contact_id: null }).in('fub_contact_id', strIds);
+}
+
+// Make sure an agent/lender is in public.fub_users (refreshes the whole list
+// when an unknown id shows up, which is also how new agents get picked up).
+const knownUsers = new Set<number>();
+export async function ensureFubUser(userId: number) {
+  if (knownUsers.has(userId)) return;
+  const { data } = await supabaseAdmin.from('fub_users').select('id').eq('id', userId).maybeSingle();
+  if (data) { knownUsers.add(userId); return; }
+  await refreshFubUsers();
+}
+
+export async function refreshFubUsers(): Promise<number> {
+  const rows: Record<string, unknown>[] = [];
+  let next: string | null = `/users?limit=100&fields=id,name,firstName,lastName,email,phone,role,status`;
+  while (next) {
+    const { ok, data, error }: { ok: boolean; data: any; error?: string } = await fubJson(next);
+    if (!ok) { console.error('[fub] GET /users failed:', error); break; }
+    for (const u of data?.users ?? []) {
+      rows.push({
+        id: u.id, name: u.name ?? null, first_name: u.firstName ?? null, last_name: u.lastName ?? null,
+        email: u.email ?? null, phone: u.phone ?? null, role: u.role ?? null, status: u.status ?? null,
+        synced_at: new Date().toISOString(),
+      });
+    }
+    next = data?._metadata?.nextLink ?? null;
+  }
+  if (rows.length) {
+    const { error } = await supabaseAdmin.from('fub_users').upsert(rows);
+    if (error) console.error('[fub] fub_users upsert failed:', error.message);
+    rows.forEach((r) => knownUsers.add(Number(r.id)));
+  }
+  return rows.length;
+}
+
+// ----------------------------------------------------------------------------
+// Outbox → POST /v1/events
+// ----------------------------------------------------------------------------
 
 export interface FubEventRow {
   id: number;
@@ -32,15 +267,6 @@ export interface SendResult {
   fubStatus?: number;
   personId?: string | null;
   error?: string;
-}
-
-function fubHeaders(apiKey: string) {
-  return {
-    Authorization: `Basic ${btoa(apiKey + ':')}`,
-    'Content-Type': 'application/json',
-    'X-System': Deno.env.get('FUB_SYSTEM') ?? 'HomeFind-AI',
-    'X-System-Key': Deno.env.get('FUB_SYSTEM_KEY') ?? 'crandell-real-estate',
-  };
 }
 
 function splitName(fullName: string | null | undefined, email: string) {
@@ -81,21 +307,27 @@ export function cleanAttribution(raw: unknown): Record<string, string> | null {
   return Object.keys(out).length ? out : null;
 }
 
-// FUB events take sourceUrl plus a campaign block; this is what fills the
-// Source / Campaign columns on the person in Follow Up Boss.
+// Fills the FUB `campaign` block (FUB's Source / Campaign reporting). Per the
+// FUB docs `campaign.source` is required, so we derive one from click ids or
+// the referrer when there's no utm_source, and skip direct traffic. The
+// landing page goes in the event description (events have no sourceUrl;
+// person.sourceUrl is for a lead provider's own record link).
 function applyAttribution(body: Record<string, any>, attr: Record<string, string> | null) {
   if (!attr) return;
-  if (attr.landing_page) body.sourceUrl = attr.landing_page;
-  const campaign: Record<string, string> = {};
-  if (attr.utm_source) campaign.source = attr.utm_source;
-  if (attr.utm_medium) campaign.medium = attr.utm_medium;
-  if (attr.utm_campaign) campaign.campaign = attr.utm_campaign;
-  if (attr.utm_term) campaign.term = attr.utm_term;
-  if (attr.utm_content) campaign.content = attr.utm_content;
-  if (!campaign.source && attr.referrer) {
-    try { campaign.source = new URL(attr.referrer).hostname; } catch { /* ignore */ }
+  let refHost = '';
+  try { refHost = attr.referrer ? new URL(attr.referrer).hostname.replace(/^www\./, '') : ''; } catch { /* ignore */ }
+  const source = attr.utm_source || (attr.gclid ? 'google' : attr.fbclid ? 'facebook' : refHost);
+  if (source) {
+    const medium = attr.utm_medium || (attr.gclid || attr.fbclid ? 'cpc' : attr.utm_source ? '' : 'referral');
+    body.campaign = {
+      source,
+      ...(medium ? { medium } : {}),
+      ...(attr.utm_campaign ? { campaign: attr.utm_campaign } : {}),
+      ...(attr.utm_term ? { term: attr.utm_term } : {}),
+      ...(attr.utm_content ? { content: attr.utm_content } : {}),
+    };
   }
-  if (Object.keys(campaign).length) body.campaign = campaign;
+  if (attr.landing_page && !body.description) body.description = `Landing page: ${attr.landing_page}`;
 }
 
 function money(n: unknown) {
@@ -109,9 +341,11 @@ async function buildEvent(row: FubEventRow, profile: Record<string, any>) {
   const tags = [...BASE_TAGS];
   const body: Record<string, any> = {
     source: SOURCE,
-    system: Deno.env.get('FUB_SYSTEM') ?? 'HomeFind-AI',
+    system: fubSystemName(),
     type: row.event_type,
     person: {
+      // A known FUB id makes FUB match directly instead of by email.
+      ...(profile.fub_contact_id && Number(profile.fub_contact_id) ? { id: Number(profile.fub_contact_id) } : {}),
       firstName,
       lastName,
       emails: [{ value: profile.email }],
@@ -236,27 +470,26 @@ async function buildEvent(row: FubEventRow, profile: Record<string, any>) {
   return body;
 }
 
-// Resolve the FUB person id for a profile we just sent an event for, so the
-// daily activity summary (which posts notes to fub_contact_id) covers them.
-async function lookupPersonId(apiKey: string, email: string): Promise<string | null> {
+// Fallback when the events response has no body: FUB can take a moment to
+// make a brand new person readable, so this may still come back empty.
+async function lookupPersonId(email: string): Promise<string | null> {
   try {
-    const res = await fetch(`${FUB_BASE}/people?email=${encodeURIComponent(email)}&limit=1&fields=id`, {
-      headers: fubHeaders(apiKey),
-    });
-    if (!res.ok) return null;
-    const data = await res.json();
-    const id = data?.people?.[0]?.id;
+    const { ok, data } = await fubJson(`/people?email=${encodeURIComponent(email)}&limit=1&fields=id`, {}, { retries: 1 });
+    const id = ok ? data?.people?.[0]?.id : null;
     return id != null ? String(id) : null;
   } catch {
     return null;
   }
 }
 
+async function postEvent(body: Record<string, any>) {
+  return await fubFetch('/events', { method: 'POST', body: JSON.stringify(body) }, { retries: 1, maxWaitMs: 10_000 });
+}
+
 // Send one outbox row to FUB. Pure: returns what happened, doesn't touch the
-// row — see processEvent for the bookkeeping.
+// row (see processEvent for the bookkeeping).
 export async function sendEvent(row: FubEventRow): Promise<SendResult> {
-  const apiKey = Deno.env.get('FOLLOW_UP_BOSS_API_KEY');
-  if (!apiKey) return { status: 'retry', error: 'FOLLOW_UP_BOSS_API_KEY not set' };
+  if (!Deno.env.get('FOLLOW_UP_BOSS_API_KEY')) return { status: 'retry', error: 'FOLLOW_UP_BOSS_API_KEY not set' };
 
   let profile: Record<string, any> | null;
   if (row.user_id) {
@@ -286,11 +519,18 @@ export async function sendEvent(row: FubEventRow): Promise<SendResult> {
 
   let res: Response;
   try {
-    res = await fetch(`${FUB_BASE}/events`, {
-      method: 'POST',
-      headers: fubHeaders(apiKey),
-      body: JSON.stringify(body),
-    });
+    res = await postEvent(body);
+    // We sent a stored FUB id and FUB says it doesn't exist (deleted or merged
+    // in FUB). Drop the stale link and let FUB match by email instead.
+    if (res.status === 404 && body.person.id) {
+      await res.body?.cancel();
+      if (profile.id) {
+        await unlinkFubPeople([body.person.id]);
+        profile.fub_contact_id = null;
+      }
+      delete body.person.id;
+      res = await postEvent(body);
+    }
   } catch (err) {
     return { status: 'retry', error: `network: ${(err as Error).message}` };
   }
@@ -298,10 +538,21 @@ export async function sendEvent(row: FubEventRow): Promise<SendResult> {
   // 200 = existing person updated, 201 = person created, 204 = FUB accepted
   // but ignored it (lead flow set to archive). All three are final.
   if (res.ok) {
-    let personId: string | null = profile.fub_contact_id ?? null;
-    if (!personId && profile.id) {
-      personId = await lookupPersonId(apiKey, profile.email);
-      if (personId) {
+    // The events response body IS the person record, so no lookup needed.
+    let person: Record<string, any> | null = null;
+    if (res.status !== 204) {
+      try { person = await res.json(); } catch { /* empty body */ }
+    } else {
+      await res.body?.cancel();
+    }
+
+    let personId: string | null = person?.id != null ? String(person.id) : profile.fub_contact_id ?? null;
+    if (!personId && profile.id && res.status !== 204) personId = await lookupPersonId(profile.email);
+
+    if (profile.id) {
+      if (person?.id != null) {
+        await mirrorFubPerson(person);
+      } else if (personId && personId !== profile.fub_contact_id) {
         await supabaseAdmin.from('profiles').update({ fub_contact_id: personId }).eq('id', profile.id);
       }
     }
@@ -340,21 +591,25 @@ export async function processEvent(row: FubEventRow): Promise<SendResult> {
   return result;
 }
 
-// Add a note to a FUB contact (no lead routing — used for activity summaries
-// such as saved-search alert digests). Returns true on success.
-export async function postFubNote(personId: string, subject: string, body: string): Promise<boolean> {
-  const apiKey = Deno.env.get('FOLLOW_UP_BOSS_API_KEY');
-  if (!apiKey) return false;
+// ----------------------------------------------------------------------------
+// Notes (no lead routing; used for activity summaries and alert digests).
+// Spaced and retried by fubFetch to respect the 10 per 10s notes limit.
+// ----------------------------------------------------------------------------
+
+export async function createFubNote(personId: string | number, subject: string, body: string) {
   try {
-    const res = await fetch(`${FUB_BASE}/notes`, {
+    const { ok, status, data, error } = await fubJson('/notes', {
       method: 'POST',
-      headers: fubHeaders(apiKey),
-      body: JSON.stringify({ personId: Number(personId) || personId, subject, body }),
+      body: JSON.stringify({ personId: Number(personId), subject, body, isHtml: false }),
     });
-    if (!res.ok) console.error('[fub] note failed:', res.status, (await res.text()).slice(0, 200));
-    return res.ok;
+    if (!ok) console.error('[fub] note failed:', status, error);
+    return { ok, status, noteId: data?.id != null ? String(data.id) : undefined, error };
   } catch (err) {
     console.error('[fub] note failed:', err);
-    return false;
+    return { ok: false, status: 0, noteId: undefined, error: (err as Error).message };
   }
+}
+
+export async function postFubNote(personId: string, subject: string, body: string): Promise<boolean> {
+  return (await createFubNote(personId, subject, body)).ok;
 }

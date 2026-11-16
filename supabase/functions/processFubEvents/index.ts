@@ -1,5 +1,5 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
-import { supabaseAdmin, corsHeaders, jsonResponse } from '../_shared/supabaseAdmin.ts';
+import { supabaseAdmin, corsHeaders, jsonResponse, isServiceRole } from '../_shared/supabaseAdmin.ts';
 import { processEvent, type FubEventRow } from '../_shared/fub.ts';
 
 /**
@@ -15,18 +15,6 @@ import { processEvent, type FubEventRow } from '../_shared/fub.ts';
  */
 
 const BATCH_SIZE = 50;
-
-function isServiceRole(req: Request): boolean {
-  const token = (req.headers.get('Authorization') ?? '').replace(/^Bearer\s+/i, '');
-  const payload = token.split('.')[1];
-  if (!payload) return false;
-  try {
-    const claims = JSON.parse(atob(payload.replace(/-/g, '+').replace(/_/g, '/')));
-    return claims.role === 'service_role';
-  } catch {
-    return false;
-  }
-}
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });

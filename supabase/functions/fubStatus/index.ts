@@ -1,5 +1,6 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { supabaseAdmin, corsHeaders, jsonResponse, requireAdmin } from '../_shared/supabaseAdmin.ts';
+import { fubFetch } from '../_shared/fub.ts';
 
 /**
  * fubStatus (admin only)
@@ -12,7 +13,6 @@ import { supabaseAdmin, corsHeaders, jsonResponse, requireAdmin } from '../_shar
  *                the vault service_role_key secret is wrong).
  */
 
-const FUB_BASE = 'https://api.followupboss.com/v1';
 const STALL_MINUTES = 10;
 
 serve(async (req) => {
@@ -29,13 +29,7 @@ serve(async (req) => {
     connectionError = 'FOLLOW_UP_BOSS_API_KEY is not set on the edge functions';
   } else {
     try {
-      const res = await fetch(`${FUB_BASE}/identity`, {
-        headers: {
-          Authorization: `Basic ${btoa(apiKey + ':')}`,
-          'X-System': Deno.env.get('FUB_SYSTEM') ?? 'HomeFind-AI',
-          'X-System-Key': Deno.env.get('FUB_SYSTEM_KEY') ?? 'crandell-real-estate',
-        },
-      });
+      const res = await fubFetch('/identity', {}, { apiKey, retries: 1 });
       if (res.ok) {
         const data = await res.json();
         connected = true;

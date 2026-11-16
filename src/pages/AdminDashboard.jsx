@@ -32,6 +32,7 @@ import FollowUpBossContacts from '../components/admin/FollowUpBossContacts';
 import InviteUserAdmin from '../components/admin/InviteUserAdmin';
 import FollowUpBossFieldMapping from '../components/admin/FollowUpBossFieldMapping';
 import FollowUpBossSyncHistory from '../components/admin/FollowUpBossSyncHistory';
+import FollowUpBossWebhooks from '../components/admin/FollowUpBossWebhooks';
 import AnalyticsDashboard from '../components/admin/AnalyticsDashboard';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Textarea } from '@/components/ui/textarea';
@@ -547,6 +548,7 @@ export default function AdminDashboard() {
           {/* CRM Integration Tab */}
           <TabsContent value="crm" className="space-y-6">
             {(user?.role === 'admin' || user?.is_user_admin === true) && <InviteUserAdmin />}
+            <FollowUpBossWebhooks />
             <FollowUpBossFieldMapping />
             <FollowUpBossSyncHistory />
             <FollowUpBossContacts />

@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { supabase, invokeFunction, SUPABASE_URL, SUPABASE_ANON_KEY } from '@/api/supabaseClient';
 import { createPageUrl } from '@/utils';
 import { sparkPhoto, PHOTO_PLACEHOLDER } from '@/lib/listingPhotos';
+import { getAttribution } from '@/lib/attribution';
 
 // ============================================================================
 // AI home-search assistant (Claude, streamed from the aiChatAssistant edge
@@ -439,7 +440,7 @@ function TourCard({ card, user, onDone }) {
         intent: 'tour',
         message: note,
         source: 'ai_chat',
-        ...(user ? {} : { contact: { name, email, phone } }),
+        ...(user ? {} : { contact: { name, email, phone }, attribution: getAttribution() }),
       });
       if (res?.success) onDone({ sent: true });
       else setError(res?.error || "We couldn't send that. Please call (480) 544-1539.");
