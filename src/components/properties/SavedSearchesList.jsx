@@ -5,6 +5,10 @@ import { Bell, BellOff, Pencil, Search as SearchIcon, Trash2, Check, X } from 'l
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { supabase } from '@/api/supabaseClient';
 import { toast } from '@/components/ui/use-toast';
 import { createPageUrl } from '@/utils';
@@ -18,6 +22,11 @@ export default function SavedSearchesList({ user }) {
   const queryClient = useQueryClient();
   const [editingId, setEditingId] = useState(null);
   const [draftName, setDraftName] = useState('');
+  // The search waiting on delete confirmation. An in-app dialog replaces
+  // window.confirm, which in-app browsers and automated test browsers often
+  // auto-dismiss (so the delete never ran).
+  const [pendingDelete, setPendingDelete] = useState(null);
+  const [deleting, setDeleting] = useState(false);
 
   const { data: searches = [], isLoading } = useQuery({
     queryKey: ['savedSearches', user?.id],
@@ -51,9 +60,11 @@ export default function SavedSearchesList({ user }) {
 
   const refresh = () => queryClient.invalidateQueries({ queryKey: ['savedSearches', user?.id] });
 
+  // Every write asks for the affected row back: RLS turns a blocked write into
+  // "0 rows, no error", which used to report success while changing nothing.
   const update = async (id, patch, message) => {
-    const { error } = await supabase.from('saved_searches').update(patch).eq('id', id);
-    if (error) {
+    const { data, error } = await supabase.from('saved_searches').update(patch).eq('id', id).select('id');
+    if (error || !data?.length) {
       toast({ title: "Couldn't update this search", variant: 'destructive' });
       return false;
     }
@@ -62,13 +73,19 @@ export default function SavedSearchesList({ user }) {
     return true;
   };
 
-  const remove = async (search) => {
-    if (!window.confirm(`Delete "${search.name}"? You'll stop getting alerts for it.`)) return;
-    const { error } = await supabase.from('saved_searches').delete().eq('id', search.id);
-    if (error) {
-      toast({ title: "Couldn't delete this search", variant: 'destructive' });
+  const confirmDelete = async () => {
+    const search = pendingDelete;
+    if (!search) return;
+    setDeleting(true);
+    const { data, error } = await supabase.from('saved_searches').delete().eq('id', search.id).select('id');
+    setDeleting(false);
+    setPendingDelete(null);
+    if (error || !data?.length) {
+      toast({ title: "Couldn't delete this search", description: 'Please refresh and try again.', variant: 'destructive' });
+      refresh();
       return;
     }
+    queryClient.setQueryData(['savedSearches', user?.id], (prev = []) => prev.filter((x) => x.id !== search.id));
     toast({ title: 'Saved search deleted' });
     refresh();
   };
@@ -134,12 +151,33 @@ export default function SavedSearchesList({ user }) {
                 </select>
                 <Button size="sm" variant="brand" onClick={() => view(s)}><SearchIcon className="h-4 w-4" /> View homes</Button>
                 <Button size="sm" variant="ghost" onClick={() => { setEditingId(s.id); setDraftName(s.name); }} aria-label={`Rename ${s.name}`}><Pencil className="h-4 w-4" /></Button>
-                <Button size="sm" variant="ghost" onClick={() => remove(s)} aria-label={`Delete ${s.name}`} className="text-destructive hover:text-destructive"><Trash2 className="h-4 w-4" /></Button>
+                <Button size="sm" variant="ghost" onClick={() => setPendingDelete(s)} aria-label={`Delete ${s.name}`} className="text-destructive hover:text-destructive"><Trash2 className="h-4 w-4" /> Delete</Button>
               </div>
             </li>
           );
         })}
       </ul>
+
+      <AlertDialog open={!!pendingDelete} onOpenChange={(open) => { if (!open && !deleting) setPendingDelete(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete this saved search?</AlertDialogTitle>
+            <AlertDialogDescription>
+              "{pendingDelete?.name}" will be removed and its listing alerts will stop.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>Keep it</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => { e.preventDefault(); confirmDelete(); }}
+              disabled={deleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleting ? 'Deleting…' : 'Delete search'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </section>
   );
 }
