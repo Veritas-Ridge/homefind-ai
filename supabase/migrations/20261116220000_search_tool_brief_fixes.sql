@@ -103,14 +103,15 @@ create trigger trg_tombstone_removed_listing
   for each row execute function public.tombstone_removed_listing();
 
 -- ── I / K. Listing sync schedule ─────────────────────────────────────────────
--- Full RESO pass, resumable: each call continues from the saved nextLink and
--- starts a new pass when the last one completes, so every active listing is
--- rewritten with the current field mapping every few hours.
+-- Full RESO pass, resumable: each call does 2 pages (checkpointing after each)
+-- and continues from the saved nextLink, starting a new pass when the last one
+-- completes, so every active listing (~42k feed records) is rewritten about every 7 hours.
+-- Overlapping runs are harmless: upserts are idempotent.
 select cron.unschedule('spark-sync-full-refresh')
  where exists (select 1 from cron.job where jobname = 'spark-sync-full-refresh');
 select cron.schedule(
   'spark-sync-full-refresh',
-  '2-59/5 * * * *',
+  '* * * * *',
   $cron$
   select net.http_post(
     url := 'https://bfnudxyxgjhdqwlcqyar.supabase.co/functions/v1/syncListingsReso',

@@ -40,6 +40,10 @@ const CURSOR_KEY = 'reso_active_sync_cursor';
 // other; the old full pass also stalled at 8,918 of ~34.6k with nothing
 // calling it again. The spark-sync-full-refresh cron now drives it.
 const FULL_CURSOR_KEY = 'reso_full_refresh_cursor';
+// Full mode work per call. A 35s run of Media-expanded pages hit the edge
+// runtime's compute limit (HTTP 546) before it could save its place, so each
+// call now does a few pages and checkpoints after every one.
+const FULL_MAX_PAGES = 2;
 const TANNER_ID = 'pc295';
 
 // ─── helpers (ported from syncSparkApiListings) ─────────────────────────────
@@ -351,7 +355,14 @@ serve(async (req) => {
     let odataCount: number | null = null;
     let totalSoFar = cur.full_synced || 0;
 
-    while (nextUrl && (Date.now() - start) < TIME_BUDGET_MS) {
+    const checkpoint = (next: string | null) => saveCursor({
+      full_next: next || '',
+      full_synced: next ? totalSoFar + synced : 0,
+      last_completed: next ? (cur.last_completed || null) : new Date().toISOString(),
+      odata_count: odataCount,
+    }, FULL_CURSOR_KEY);
+
+    while (nextUrl && pages < FULL_MAX_PAGES && (Date.now() - start) < TIME_BUDGET_MS) {
       const res = await sparkFetch(nextUrl, token);
       if (!res.ok) throw new Error(`RESO ${res.status}: ${(await res.text()).slice(0, 200)}`);
       const data = await res.json();
@@ -373,16 +384,11 @@ serve(async (req) => {
       await refreshAttribution(rows.map((r: any) => r.listing_key).filter(Boolean));
       nextUrl = data['@odata.nextLink'] || null;
       pages++;
+      await checkpoint(nextUrl); // progress survives a killed worker
     }
 
     totalSoFar += synced;
     const complete = !nextUrl;
-    await saveCursor({
-      full_next: complete ? '' : nextUrl,
-      full_synced: complete ? 0 : totalSoFar,
-      last_completed: complete ? new Date().toISOString() : (cur.last_completed || null),
-      odata_count: odataCount,
-    }, FULL_CURSOR_KEY);
 
     return jsonResponse({
       success: true, mode, odata_count: odataCount,
