@@ -1,3 +1,4 @@
+import { alertTypeLabel } from '@/lib/alertTypes';
 import React, { useMemo, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -385,12 +386,10 @@ export default function AnalyticsDashboard({ allUsers, allViews, alerts, savedPr
   const alertTypeData = useMemo(() => {
     const counts = {};
     alerts.forEach(a => {
-      counts[a.alert_type] = (counts[a.alert_type] || 0) + 1;
+      const label = alertTypeLabel(a.alert_type);
+      counts[label] = (counts[label] || 0) + 1;
     });
-    return Object.entries(counts).map(([name, value]) => ({
-      name: name.replace(/_/g, ' '),
-      value
-    }));
+    return Object.entries(counts).map(([name, value]) => ({ name, value }));
   }, [alerts]);
 
   const avgViewsPerUser = activeUsersInRange > 0

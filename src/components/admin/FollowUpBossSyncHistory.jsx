@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { supabase } from '@/api/supabaseClient';
+import React, { useMemo, useState } from 'react';
+import { supabase, invokeFunction } from '@/api/supabaseClient';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -7,74 +7,157 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { History, CheckCircle, XCircle, Loader2, Search, Filter } from 'lucide-react';
-import { format } from 'date-fns';
+import { History, CheckCircle, XCircle, Loader2, Search, Plug, AlertTriangle, RefreshCw } from 'lucide-react';
+import { format, formatDistanceToNow } from 'date-fns';
+
+// Every Follow Up Boss write goes through the fub_events outbox, so the outbox
+// IS the sync log: one row per event with its delivery result. (The old
+// fub_sync_history table was never written to, hence "Total 0".)
+
+const STATUS_STYLES = {
+  sent: 'bg-green-100 text-green-800',
+  pending: 'bg-amber-100 text-amber-800',
+  failed: 'bg-red-100 text-red-800',
+  skipped: 'bg-muted text-muted-foreground',
+};
+
+function sourceLabel(payload) {
+  const a = payload?.attribution;
+  if (!a) return '';
+  const utm = [a.utm_source, a.utm_medium, a.utm_campaign].filter(Boolean).join(' / ');
+  if (utm) return utm;
+  try { return a.referrer ? new URL(a.referrer).hostname : ''; } catch { return ''; }
+}
+
+function ConnectionPanel() {
+  const { data, isLoading, refetch, isFetching } = useQuery({
+    queryKey: ['fub-status'],
+    queryFn: () => invokeFunction('fubStatus', {}),
+    refetchInterval: 60_000,
+    retry: 1,
+  });
+
+  if (isLoading) {
+    return <div className="flex items-center gap-2 text-sm text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin" /> Checking connection…</div>;
+  }
+
+  const q = data?.queue ?? {};
+  return (
+    <div className="grid gap-3 md:grid-cols-2">
+      <div className={`rounded-lg border p-4 ${data?.connected ? 'border-green-200 bg-green-50' : 'border-red-200 bg-red-50'}`}>
+        <div className="flex items-center justify-between gap-2">
+          <p className="flex items-center gap-2 font-semibold text-foreground">
+            <Plug className="h-4 w-4" aria-hidden="true" />
+            {data?.connected ? 'Connected to Follow Up Boss' : 'Not connected'}
+          </p>
+          <Button size="sm" variant="ghost" onClick={() => refetch()} disabled={isFetching} aria-label="Recheck connection">
+            <RefreshCw className={`h-4 w-4 ${isFetching ? 'animate-spin' : ''}`} />
+          </Button>
+        </div>
+        {data?.connected ? (
+          <p className="mt-1 text-sm text-muted-foreground">
+            Account: <span className="font-medium text-foreground">{data.account?.name || 'Unnamed'}</span>
+            {data.account?.id ? ` (ID ${data.account.id})` : ''}
+            {data.account?.domain ? ` · ${data.account.domain}` : ''}
+            {data.account?.user ? ` · key owner ${data.account.user}` : ''}
+          </p>
+        ) : (
+          <p className="mt-1 text-sm text-red-700">{data?.connection_error || 'Unable to check the connection.'}</p>
+        )}
+      </div>
+
+      <div className={`rounded-lg border p-4 ${q.worker_ok === false ? 'border-amber-300 bg-amber-50' : 'border-border bg-card'}`}>
+        <p className="flex items-center gap-2 font-semibold text-foreground">
+          {q.worker_ok === false ? <AlertTriangle className="h-4 w-4 text-amber-600" /> : <CheckCircle className="h-4 w-4 text-green-600" />}
+          Delivery queue
+        </p>
+        <p className="mt-1 text-sm text-muted-foreground">
+          {q.pending ?? 0} waiting · {q.failed ?? 0} failed
+          {q.last_sent_at ? ` · last delivered ${formatDistanceToNow(new Date(q.last_sent_at), { addSuffix: true })}` : ' · nothing delivered yet'}
+        </p>
+        {q.worker_ok === false && (
+          <p className="mt-1 text-sm text-amber-800">
+            {q.stalled} event{q.stalled === 1 ? ' has' : 's have'} waited over 10 minutes. The background sender
+            (process-fub-events cron) isn't running; check the vault service_role_key secret.
+          </p>
+        )}
+      </div>
+    </div>
+  );
+}
 
 export default function FollowUpBossSyncHistory() {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [typeFilter, setTypeFilter] = useState('all');
 
-  const { data: syncHistory = [], isLoading } = useQuery({
-    queryKey: ['fub-sync-history'],
+  const { data: events = [], isLoading } = useQuery({
+    queryKey: ['fub-sync-log'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('fub_sync_history')
-        .select('*')
+        .from('fub_events')
+        .select('id, user_id, event_type, status, attempts, fub_status, last_error, payload, created_at, sent_at, property_id')
         .order('created_at', { ascending: false })
-        .limit(100);
+        .limit(200);
       if (error) throw error;
-      return data || [];
+      const rows = data || [];
+      const ids = [...new Set(rows.map((r) => r.user_id).filter(Boolean))];
+      let people = {};
+      if (ids.length) {
+        const { data: profiles } = await supabase.from('profiles').select('id, email, full_name').in('id', ids);
+        people = Object.fromEntries((profiles || []).map((p) => [p.id, p]));
+      }
+      return rows.map((r) => {
+        const p = people[r.user_id];
+        const anon = r.payload?.person;
+        return {
+          ...r,
+          contact_name: p?.full_name || anon?.name || '',
+          contact_email: p?.email || anon?.email || '',
+        };
+      });
     },
-    refetchInterval: 30000 // Refresh every 30 seconds
+    refetchInterval: 30_000,
   });
 
-  const filteredHistory = syncHistory.filter(sync => {
-    const matchesSearch = sync.contact_email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         sync.contact_name?.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = statusFilter === 'all' || sync.status === statusFilter;
-    const matchesType = typeFilter === 'all' || sync.sync_type === typeFilter;
+  const types = useMemo(() => [...new Set(events.map((e) => e.event_type))].sort(), [events]);
+
+  const filtered = events.filter((e) => {
+    const term = searchTerm.toLowerCase();
+    const matchesSearch = !term || e.contact_email.toLowerCase().includes(term) || e.contact_name.toLowerCase().includes(term);
+    const matchesStatus = statusFilter === 'all' || e.status === statusFilter;
+    const matchesType = typeFilter === 'all' || e.event_type === typeFilter;
     return matchesSearch && matchesStatus && matchesType;
   });
 
   const stats = {
-    total: syncHistory.length,
-    success: syncHistory.filter(s => s.status === 'success').length,
-    failed: syncHistory.filter(s => s.status === 'failed').length,
-    manual: syncHistory.filter(s => s.sync_type === 'manual').length
+    total: events.length,
+    sent: events.filter((e) => e.status === 'sent').length,
+    failed: events.filter((e) => e.status === 'failed').length,
+    pending: events.filter((e) => e.status === 'pending').length,
   };
 
   return (
-    <Card className="shadow-lg border-slate-200">
+    <Card className="shadow-lg border-border">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <History className="h-5 w-5" />
-          Sync History
+          Follow Up Boss sync
         </CardTitle>
-        <div className="flex gap-4 mt-4">
-          <div className="text-sm">
-            <span className="text-slate-600">Total: </span>
-            <span className="font-semibold">{stats.total}</span>
-          </div>
-          <div className="text-sm">
-            <span className="text-slate-600">Success: </span>
-            <span className="font-semibold text-green-600">{stats.success}</span>
-          </div>
-          <div className="text-sm">
-            <span className="text-slate-600">Failed: </span>
-            <span className="font-semibold text-red-600">{stats.failed}</span>
-          </div>
-          <div className="text-sm">
-            <span className="text-slate-600">Manual: </span>
-            <span className="font-semibold text-blue-600">{stats.manual}</span>
-          </div>
+        <div className="mt-4">
+          <ConnectionPanel />
+        </div>
+        <div className="flex flex-wrap gap-4 mt-4 text-sm">
+          <span><span className="text-muted-foreground">Total: </span><span className="font-semibold">{stats.total}</span></span>
+          <span><span className="text-muted-foreground">Delivered: </span><span className="font-semibold text-green-700">{stats.sent}</span></span>
+          <span><span className="text-muted-foreground">Waiting: </span><span className="font-semibold text-amber-700">{stats.pending}</span></span>
+          <span><span className="text-muted-foreground">Failed: </span><span className="font-semibold text-red-600">{stats.failed}</span></span>
         </div>
       </CardHeader>
       <CardContent>
-        {/* Filters */}
         <div className="flex flex-col md:flex-row gap-4 mb-6">
           <div className="flex-1 relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               placeholder="Search by contact name or email..."
               value={searchTerm}
@@ -83,93 +166,67 @@ export default function FollowUpBossSyncHistory() {
             />
           </div>
           <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-40">
-              <SelectValue />
-            </SelectTrigger>
+            <SelectTrigger className="w-full md:w-44"><SelectValue placeholder="Status" /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All Status</SelectItem>
-              <SelectItem value="success">Success</SelectItem>
+              <SelectItem value="all">All statuses</SelectItem>
+              <SelectItem value="sent">Delivered</SelectItem>
+              <SelectItem value="pending">Waiting</SelectItem>
               <SelectItem value="failed">Failed</SelectItem>
+              <SelectItem value="skipped">Skipped</SelectItem>
             </SelectContent>
           </Select>
           <Select value={typeFilter} onValueChange={setTypeFilter}>
-            <SelectTrigger className="w-40">
-              <SelectValue />
-            </SelectTrigger>
+            <SelectTrigger className="w-full md:w-52"><SelectValue placeholder="Event type" /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All Types</SelectItem>
-              <SelectItem value="auto">Auto Sync</SelectItem>
-              <SelectItem value="manual">Manual Sync</SelectItem>
+              <SelectItem value="all">All event types</SelectItem>
+              {types.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}
             </SelectContent>
           </Select>
         </div>
 
-        {/* History Table */}
         {isLoading ? (
-          <div className="flex justify-center py-8">
-            <Loader2 className="h-6 w-6 animate-spin text-slate-600" />
-          </div>
-        ) : filteredHistory.length === 0 ? (
-          <div className="text-center py-8 text-slate-600">
-            No sync history found
-          </div>
+          <div className="flex justify-center py-12"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>
+        ) : filtered.length === 0 ? (
+          <p className="text-center py-12 text-muted-foreground">No sync events yet.</p>
         ) : (
           <div className="overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Date</TableHead>
+                  <TableHead>When</TableHead>
                   <TableHead>Contact</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Type</TableHead>
-                  <TableHead>Triggered By</TableHead>
-                  <TableHead>Details</TableHead>
+                  <TableHead>Event</TableHead>
+                  <TableHead>Source</TableHead>
+                  <TableHead>Result</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredHistory.map((sync) => (
-                  <TableRow key={sync.id}>
-                    <TableCell className="text-sm text-slate-600">
-                      {format(new Date(sync.created_at), 'MMM d, yyyy HH:mm')}
+                {filtered.map((e) => (
+                  <TableRow key={e.id}>
+                    <TableCell className="whitespace-nowrap text-sm">
+                      {format(new Date(e.created_at), 'MMM d, h:mm a')}
                     </TableCell>
                     <TableCell>
-                      <div>
-                        <div className="font-medium">{sync.contact_name}</div>
-                        <div className="text-xs text-slate-500">{sync.contact_email}</div>
-                      </div>
+                      <div className="font-medium text-foreground">{e.contact_name || 'Unknown'}</div>
+                      <div className="text-xs text-muted-foreground">{e.contact_email}</div>
                     </TableCell>
-                    <TableCell>
-                      {sync.status === 'success' ? (
-                        <Badge className="bg-green-100 text-green-800">
-                          <CheckCircle className="h-3 w-3 mr-1" />
-                          Success
-                        </Badge>
-                      ) : (
-                        <Badge className="bg-red-100 text-red-800">
-                          <XCircle className="h-3 w-3 mr-1" />
-                          Failed
-                        </Badge>
-                      )}
+                    <TableCell className="text-sm">
+                      {e.event_type}
+                      {e.payload?.intent && <span className="text-muted-foreground"> ({e.payload.intent})</span>}
                     </TableCell>
+                    <TableCell className="text-xs text-muted-foreground max-w-[12rem] truncate">{sourceLabel(e.payload) || 'Direct'}</TableCell>
                     <TableCell>
-                      <Badge variant={sync.sync_type === 'manual' ? 'default' : 'outline'}>
-                        {sync.sync_type}
+                      <Badge className={`border-0 ${STATUS_STYLES[e.status] || ''}`}>
+                        {e.status === 'sent' ? <CheckCircle className="h-3 w-3 mr-1" /> : e.status === 'failed' ? <XCircle className="h-3 w-3 mr-1" /> : null}
+                        {e.status === 'sent' ? 'Delivered' : e.status === 'pending' ? 'Waiting' : e.status}
                       </Badge>
-                    </TableCell>
-                    <TableCell className="text-sm text-slate-600">
-                      {sync.triggered_by || 'System'}
-                    </TableCell>
-                    <TableCell>
-                      {sync.error_message ? (
-                        <div className="text-xs text-red-600 max-w-xs truncate" title={sync.error_message}>
-                          {sync.error_message}
-                        </div>
-                      ) : sync.synced_fields ? (
-                        <div className="text-xs text-slate-500">
-                          {Object.keys(sync.synced_fields).length} fields synced
-                        </div>
-                      ) : (
-                        <span className="text-xs text-slate-400">-</span>
+                      <div className="text-xs text-muted-foreground mt-1">
+                        {e.status === 'sent' && e.sent_at ? format(new Date(e.sent_at), 'MMM d, h:mm a') : ''}
+                        {e.fub_status ? ` · HTTP ${e.fub_status}` : ''}
+                        {e.attempts > 1 ? ` · ${e.attempts} attempts` : ''}
+                      </div>
+                      {e.last_error && e.status !== 'sent' && (
+                        <div className="text-xs text-red-600 mt-1 max-w-xs truncate" title={e.last_error}>{e.last_error}</div>
                       )}
                     </TableCell>
                   </TableRow>

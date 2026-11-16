@@ -26,7 +26,8 @@ import {
   Users, TrendingDown, Eye, Heart, Loader2,
   AlertCircle, CheckCircle, Clock, Sparkles, Link as LinkIcon, RefreshCw
 } from 'lucide-react';
-import { format } from 'date-fns';
+import { format, formatDistanceToNow } from 'date-fns';
+import { alertTypeLabel, URGENT_ALERT_TYPES } from '@/lib/alertTypes';
 import FollowUpBossContacts from '../components/admin/FollowUpBossContacts';
 import InviteUserAdmin from '../components/admin/InviteUserAdmin';
 import FollowUpBossFieldMapping from '../components/admin/FollowUpBossFieldMapping';
@@ -60,7 +61,7 @@ export default function AdminDashboard() {
     queryFn: async () => {
       const { data } = await supabase
         .from('engagement_alerts')
-        .select('*')
+        .select('*, fub_event:fub_events(status, sent_at, last_error, attempts)')
         .order('created_at', { ascending: false })
         .limit(100);
       return data || [];
@@ -282,8 +283,8 @@ export default function AdminDashboard() {
           <Card className="shadow-lg border-slate-200">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                Engagement Drop Alerts
-                <InfoTooltip content="Automated alerts when user activity drops by 50% or more. Take action to re-engage users." />
+                Lead and Engagement Alerts
+                <InfoTooltip content="Tour requests and questions from buyers, plus alerts when a buyer's activity drops. Newest first." />
               </CardTitle>
             </CardHeader>
               <CardContent>
@@ -315,27 +316,56 @@ export default function AdminDashboard() {
                                   <p className="text-sm text-slate-600">{alert.user_email}</p>
                                 </div>
                               </div>
-                              <Badge className={`${config.bg} ${config.color} border-0`}>
-                                {alert.status.replace('_', ' ')}
-                              </Badge>
+                              <div className="flex items-center gap-2 flex-wrap justify-end">
+                                <Badge className={`border-0 ${URGENT_ALERT_TYPES.has(alert.alert_type) ? 'bg-primary text-primary-foreground' : 'bg-muted text-foreground'}`}>
+                                  {alertTypeLabel(alert.alert_type)}
+                                </Badge>
+                                <Badge className={`${config.bg} ${config.color} border-0`}>
+                                  {alert.status.replace('_', ' ')}
+                                </Badge>
+                              </div>
                             </div>
 
                             <div className="ml-8 space-y-2">
-                              <div className="grid grid-cols-2 gap-4 text-sm">
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1 text-sm">
                                 <div>
-                                  <span className="text-slate-600">Engagement Drop:</span>
-                                  <span className="ml-2 font-semibold text-red-600">
-                                    {alert.drop_percentage}%
-                                  </span>
-                                </div>
-                                <div>
-                                  <span className="text-slate-600">Last Activity:</span>
+                                  <span className="text-slate-600">Received:</span>
                                   <span className="ml-2 font-semibold">
-                                    {alert.last_activity_date
-                                      ? format(new Date(alert.last_activity_date), 'MMM d, yyyy')
-                                      : 'N/A'}
+                                    {alert.created_at ? format(new Date(alert.created_at), 'MMM d, yyyy h:mm a') : 'Unknown'}
                                   </span>
                                 </div>
+                                <div>
+                                  <span className="text-slate-600">Last activity:</span>
+                                  <span className="ml-2 font-semibold">
+                                    {(alert.last_activity_date || alert.created_at)
+                                      ? `${formatDistanceToNow(new Date(alert.last_activity_date || alert.created_at), { addSuffix: true })}`
+                                      : 'Unknown'}
+                                  </span>
+                                </div>
+                                {alert.drop_percentage > 0 && (
+                                  <div>
+                                    <span className="text-slate-600">Engagement drop:</span>
+                                    <span className="ml-2 font-semibold text-red-600">{alert.drop_percentage}%</span>
+                                  </div>
+                                )}
+                                {alert.fub_event && (
+                                  <div>
+                                    <span className="text-slate-600">Follow Up Boss:</span>
+                                    <span className={`ml-2 font-semibold ${alert.fub_event.status === 'sent' ? 'text-green-700' : alert.fub_event.status === 'failed' ? 'text-red-600' : 'text-amber-700'}`}>
+                                      {alert.fub_event.status === 'sent'
+                                        ? `Delivered ${alert.fub_event.sent_at ? format(new Date(alert.fub_event.sent_at), 'MMM d, h:mm a') : ''}`
+                                        : alert.fub_event.status === 'pending' ? 'Queued for delivery'
+                                        : alert.fub_event.status === 'skipped' ? 'Not sent (team account)'
+                                        : `Failed${alert.fub_event.last_error ? `: ${alert.fub_event.last_error.slice(0, 80)}` : ''}`}
+                                    </span>
+                                  </div>
+                                )}
+                                {alert.notified_at && (
+                                  <div>
+                                    <span className="text-slate-600">Email to Tanner:</span>
+                                    <span className="ml-2 font-semibold text-green-700">{format(new Date(alert.notified_at), 'MMM d, h:mm a')}</span>
+                                  </div>
+                                )}
                               </div>
 
                               {alert.ai_summary && (
@@ -364,14 +394,17 @@ export default function AdminDashboard() {
                                     >
                                       Acknowledge
                                     </Button>
-                                    <Button
-                                     size="sm"
-                                     className="bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-1"
-                                     onClick={() => syncToFollowUpBoss(alert.id)}
-                                    >
-                                     Sync to Follow Up Boss
-                                     <InfoTooltip content="Create a task in Follow Up Boss CRM for this alert" />
-                                    </Button>
+                                    {alert.fub_event?.status !== 'sent' && alert.fub_event?.status !== 'pending' && (
+                                      <Button
+                                       size="sm"
+                                       variant="brand"
+                                       className="flex items-center gap-1"
+                                       onClick={() => syncToFollowUpBoss(alert.id)}
+                                      >
+                                       Sync to Follow Up Boss
+                                       <InfoTooltip content="Create a task in Follow Up Boss CRM for this alert" />
+                                      </Button>
+                                    )}
                                     <Button
                                       size="sm"
                                       className="bg-slate-800 hover:bg-slate-700"
