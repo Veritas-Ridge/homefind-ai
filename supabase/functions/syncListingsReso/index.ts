@@ -34,6 +34,11 @@ const RESO_TOP = 100;             // listings per page (Media expand is heavy)
 const DB_BATCH = 100;
 const TIME_BUDGET_MS = 35_000;    // process pages until this, then save + return
 const CURSOR_KEY = 'reso_active_sync_cursor';
+// Full mode keeps its own checkpoint. It used to share CURSOR_KEY with the
+// incremental run, and the two read-modify-write cycles could overwrite each
+// other; the old full pass also stalled at 8,918 of ~34.6k with nothing
+// calling it again. The spark-sync-full-refresh cron now drives it.
+const FULL_CURSOR_KEY = 'reso_full_refresh_cursor';
 const TANNER_ID = 'pc295';
 
 // ─── helpers (ported from syncSparkApiListings) ─────────────────────────────
@@ -131,7 +136,8 @@ function buildRow(rec: any) {
   const agentId = (d.ListAgentMlsId || '').toLowerCase();
   const coAgentId = (d.CoListAgentMlsId || '').toLowerCase();
   const vtUrl = d.VirtualTourURLUnbranded || '';
-  const baths = (parseFloat(d.BathsFull) || 0) + (parseFloat(d.BathsHalf) || 0) * 0.5;
+  const baths = parseFloat(d.BathroomsTotalDecimal)
+    || ((parseFloat(d.BathsFull) || 0) + (parseFloat(d.BathroomsThreeQuarter) || 0) * 0.75 + (parseFloat(d.BathsHalf) || 0) * 0.5);
   const mlsStatus = d.MlsStatus || d.StandardStatus || 'Active';
 
   return {
@@ -152,7 +158,9 @@ function buildRow(rec: any) {
     price_change_date: d.PriceChangeTimestamp || null,
     bedrooms: parseInt(d.BedsTotal) || 0,
     bathrooms: baths || parseFloat(d.BathsTotal) || 0,
-    square_feet: parseInt(d.BuildingAreaTotal || d.LivingArea || '0') || 0,
+    // LivingArea is the MLS "approx sq ft" buyers see. BuildingAreaTotal is
+    // blank or includes garage on many ARMLS records (0 sq ft / wrong sizes).
+    square_feet: parseInt(d.LivingArea || d.AboveGradeFinishedArea || d.BuildingAreaTotal || '0') || 0,
     lot_size: parseFloat(d.LotSizeAcres || '0') || null,
     year_built: parseInt(d.YearBuilt || '0') || null,
     property_type: mapType(d.PropertyType, d.PropertySubType),
@@ -204,13 +212,13 @@ function buildRow(rec: any) {
   };
 }
 
-async function loadCursor() {
-  const { data } = await supabaseAdmin.from('sync_cache').select('cache_value').eq('cache_key', CURSOR_KEY).maybeSingle();
+async function loadCursor(key = CURSOR_KEY) {
+  const { data } = await supabaseAdmin.from('sync_cache').select('cache_value').eq('cache_key', key).maybeSingle();
   return data?.cache_value || {};
 }
-async function saveCursor(val: any) {
+async function saveCursor(val: any, key = CURSOR_KEY) {
   await supabaseAdmin.from('sync_cache').upsert(
-    { cache_key: CURSOR_KEY, cache_value: val, sync_key: CURSOR_KEY, updated_at: new Date().toISOString() },
+    { cache_key: key, cache_value: val, sync_key: key, updated_at: new Date().toISOString() },
     { onConflict: 'cache_key' },
   );
 }
@@ -264,6 +272,7 @@ serve(async (req) => {
 
       const upserts: any[] = [];
       const deletes: string[] = [];
+      const deleteMls: string[] = [];
       let odataCount: number | null = null;
       let pages = 0;
       while (nextUrl && (Date.now() - start) < TIME_BUDGET_MS) {
@@ -274,7 +283,10 @@ serve(async (req) => {
         for (const rec of (data.value || [])) {
           const isActive = (rec.StandardStatus || rec.MlsStatus || '').toLowerCase().includes('active');
           if (isActive) { const r = buildRow(rec); if (r) upserts.push(r); }
-          else if (rec.ListingKey) deletes.push(rec.ListingKey);
+          else {
+            if (rec.ListingKey) deletes.push(rec.ListingKey);
+            if (rec.ListingId) deleteMls.push(String(rec.ListingId));
+          }
         }
         nextUrl = data['@odata.nextLink'] || null;
         pages++;
@@ -287,6 +299,11 @@ serve(async (req) => {
       for (let i = 0; i < deletes.length; i += 500) {
         const { error } = await supabaseAdmin.from('properties').delete().in('listing_key', deletes.slice(i, i + 500));
         if (!error) deleted += Math.min(500, deletes.length - i);
+      }
+      // Older rows can carry a different listing_key for the same MLS number
+      // (the withdrawn 6701 N 42nd Dr had two record ids). Match on MLS too.
+      for (let i = 0; i < deleteMls.length; i += 500) {
+        await supabaseAdmin.from('properties').delete().in('mls_number', deleteMls.slice(i, i + 500));
       }
 
       const windowComplete = !nextUrl;
@@ -307,7 +324,7 @@ serve(async (req) => {
     }
 
     // ── full mode ──
-    let cur = await loadCursor();
+    let cur = await loadCursor(FULL_CURSOR_KEY);
     if (body.reset === true) cur = {};
     url = cur.full_next ||
       `${RESO}?$count=true&$top=${RESO_TOP}&$expand=Media&$filter=${encodeURIComponent("StandardStatus eq 'Active'")}`;
@@ -347,12 +364,11 @@ serve(async (req) => {
     totalSoFar += synced;
     const complete = !nextUrl;
     await saveCursor({
-      ...cur, // preserve inc_* checkpoint fields so full/incremental don't clobber
       full_next: complete ? '' : nextUrl,
       full_synced: complete ? 0 : totalSoFar,
       last_completed: complete ? new Date().toISOString() : (cur.last_completed || null),
       odata_count: odataCount,
-    });
+    }, FULL_CURSOR_KEY);
 
     return jsonResponse({
       success: true, mode, odata_count: odataCount,

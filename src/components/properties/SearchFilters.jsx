@@ -654,14 +654,16 @@ export default function SearchFilters({ onFilterChange, initialFilters = {} }) {
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Address, city, neighborhood, ZIP, or subdivision"
+            placeholder="Address, city, ZIP, subdivision, or MLS #"
             value={filters.query_text || filters.city || filters.subdivision || filters.zip_code || ''}
             onChange={(e) => {
               const val = e.target.value;
               // Pure digits → precise zip_code match (faster, indexed column)
               // Anything else → query_text fuzzy search across address, city,
               // and subdivision so users find homes by neighborhood name
-              if (/^\d+$/.test(val)) {
+              // Up to 5 digits is a ZIP; 6+ digits is an MLS number, which
+              // Search.jsx matches exactly on mls_number via query_text.
+              if (/^\d{1,5}$/.test(val)) {
                 handleBatchChange({ zip_code: val, query_text: '', city: '', subdivision: '' });
               } else {
                 handleBatchChange({ query_text: val, zip_code: '', city: '', subdivision: '' });

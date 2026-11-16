@@ -174,7 +174,13 @@ function applyFiltersToQuery(query, filters) {
   // hero search bar. Lets users type "Spur Cross" and find homes in
   // SPUR CROSS PHASE 2 PARCEL 6 even though that's a subdivision name,
   // not a city name. Sanitized to prevent PostgREST syntax injection.
-  if (filters.query_text) {
+  // An MLS number ("7067546", "MLS 7067546", "#7067546") is an exact match on
+  // mls_number. Digits used to be routed to the ZIP filter, which is why MLS
+  // search returned nothing.
+  const mlsMatch = (filters.query_text || '').trim().match(/^(?:mls\s*)?#?\s*(\d{6,9})$/i);
+  if (mlsMatch) {
+    query = query.eq('mls_number', mlsMatch[1]);
+  } else if (filters.query_text) {
     const q = sanitizeQueryText(filters.query_text);
     if (q.length > 0) {
       query = query.or(
