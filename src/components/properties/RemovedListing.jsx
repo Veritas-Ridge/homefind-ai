@@ -97,7 +97,7 @@ export default function RemovedListing({ propertyId }) {
   return (
     <div className="crandell-container py-12 md:py-16">
       <div className="max-w-2xl">
-        <p className="text-xs uppercase tracking-[0.14em] text-muted-foreground mb-3">Listing no longer available</p>
+        <p className="crandell-eyebrow mb-3">Listing no longer available</p>
         <h1 className="font-display text-foreground mb-3">
           {tomb?.address ? `${tomb.address} is off the market` : 'This home is no longer on the market'}
         </h1>

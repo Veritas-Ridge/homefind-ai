@@ -30,7 +30,7 @@ function priceTierColor(price) {
   if (price >= 1500000) return '#7C3AED';  // violet — $1.5M+ luxury
   if (price >= 1000000) return '#2563EB';  // blue   — $1M–1.5M premium
   if (price >=  700000) return '#0EA5E9';  // sky    — $700K–1M upper-mid
-  if (price >=  500000) return '#00AFE5';  // brand  — $500K–700K mid (default brand)
+  if (price >=  500000) return '#4F90B5';  // brand  — $500K–700K mid (default brand)
   return '#10B981';                         // emerald — under $500K value
 }
 
@@ -93,7 +93,7 @@ function createClusterIcon(cluster) {
   return L.divIcon({
     className: 'custom-cluster-marker',
     html: `<div style="
-      background: #00AFE5;
+      background: #4F90B5;
       color: white;
       width: ${size}px;
       height: ${size}px;
@@ -157,7 +157,7 @@ function RefitButton({ properties }) {
   return (
     <button
       onClick={handleRefit}
-      className="absolute top-3 right-3 z-[1000] bg-white rounded-lg shadow-md p-2 hover:bg-muted border border-border"
+      className="absolute top-3 right-3 z-[1000] bg-card rounded-lg shadow-md p-2 hover:bg-muted border border-border"
       title="Fit all markers"
     >
       <Maximize2 className="h-4 w-4 text-foreground" />

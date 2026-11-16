@@ -112,7 +112,7 @@ export default function SavedSearchesList({ user }) {
           const summary = summarizeSearchFilters(s.filters);
           const recent = recentCounts[s.id] ?? 0;
           return (
-            <li key={s.id} className="rounded-xl border border-border bg-white p-4">
+            <li key={s.id} className="rounded-xl border border-border bg-card p-4">
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0 flex-1">
                   {editingId === s.id ? (
@@ -145,7 +145,7 @@ export default function SavedSearchesList({ user }) {
                   onChange={(e) => update(s.id, { frequency: e.target.value }, 'Alert frequency updated')}
                   disabled={!s.alerts_enabled}
                   aria-label="Alert frequency"
-                  className="h-9 text-sm border border-border rounded-md px-2 bg-white text-foreground disabled:opacity-50"
+                  className="h-9 text-sm border border-border rounded-md px-2 bg-card text-foreground disabled:opacity-50"
                 >
                   {ALERT_FREQUENCIES.map((f) => <option key={f.value} value={f.value}>{f.label}</option>)}
                 </select>

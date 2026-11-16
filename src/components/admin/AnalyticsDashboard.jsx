@@ -17,18 +17,18 @@ import { supabase } from '@/api/supabaseClient';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 
-const COLORS = ['#00AFE5', '#3a9dd8', '#1e7cc0', '#0c5fa8', '#06438a', '#8b5cf6', '#10b981', '#f59e0b'];
+const COLORS = ['#4F90B5', '#3a9dd8', '#1e7cc0', '#0c5fa8', '#06438a', '#8b5cf6', '#10b981', '#f59e0b'];
 
-function MetricCard({ title, value, change, icon: Icon, color = 'text-[#00AFE5]', subtext }) {
+function MetricCard({ title, value, change, icon: Icon, color = 'text-[#4F90B5]', subtext }) {
   const isPositive = change >= 0;
   return (
-    <Card className="bg-white shadow border-slate-200">
+    <Card className="bg-card shadow border-border">
       <CardContent className="p-5">
         <div className="flex items-start justify-between">
           <div className="flex-1">
-            <p className="text-sm text-slate-500 mb-1">{title}</p>
-            <p className="text-3xl font-bold text-slate-900">{value}</p>
-            {subtext && <p className="text-xs text-slate-400 mt-1">{subtext}</p>}
+            <p className="text-sm text-muted-foreground mb-1">{title}</p>
+            <p className="text-3xl font-bold text-foreground">{value}</p>
+            {subtext && <p className="text-xs text-muted-foreground mt-1">{subtext}</p>}
             {change !== undefined && (
               <div className={`flex items-center gap-1 mt-2 text-sm ${isPositive ? 'text-green-600' : 'text-red-500'}`}>
                 {isPositive ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
@@ -36,7 +36,7 @@ function MetricCard({ title, value, change, icon: Icon, color = 'text-[#00AFE5]'
               </div>
             )}
           </div>
-          <div className={`p-3 rounded-xl bg-slate-50`}>
+          <div className={`p-3 rounded-xl bg-muted`}>
             <Icon className={`h-6 w-6 ${color}`} />
           </div>
         </div>
@@ -400,7 +400,7 @@ export default function AnalyticsDashboard({ allUsers, allViews, alerts, savedPr
     <div className="space-y-6">
       {/* Date range selector */}
       <div className="flex items-center justify-between">
-        <h2 className="text-xl font-bold text-slate-800">Analytics Overview</h2>
+        <h2 className="text-xl font-bold text-foreground">Analytics Overview</h2>
         <div className="flex gap-2">
           {[7, 14, 30, 90].map(d => (
             <button
@@ -408,8 +408,8 @@ export default function AnalyticsDashboard({ allUsers, allViews, alerts, savedPr
               onClick={() => setDateRange(d)}
               className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
                 dateRange === d
-                  ? 'bg-[#00AFE5] text-white'
-                  : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'
+                  ? 'bg-[#4F90B5] text-white'
+                  : 'bg-card border border-border text-muted-foreground hover:bg-muted'
               }`}
             >
               {d}d
@@ -425,7 +425,7 @@ export default function AnalyticsDashboard({ allUsers, allViews, alerts, savedPr
           value={viewsInRange.length.toLocaleString()}
           change={viewsChange}
           icon={Eye}
-          color="text-[#00AFE5]"
+          color="text-[#4F90B5]"
           subtext={`${avgViewsPerUser} avg per user`}
         />
         <MetricCard
@@ -456,7 +456,7 @@ export default function AnalyticsDashboard({ allUsers, allViews, alerts, savedPr
           title="Active Properties"
           value={totalPropertiesCount.toLocaleString()}
           icon={Database}
-          color="text-indigo-500"
+          color="text-primary"
           subtext={`${cityAggregation.length} cities covered`}
         />
         <MetricCard
@@ -494,17 +494,17 @@ export default function AnalyticsDashboard({ allUsers, allViews, alerts, savedPr
       </div>
 
       {/* Activity Over Time */}
-      <Card className="bg-white shadow border-slate-200">
+      <Card className="bg-card shadow border-border">
         <CardHeader>
-          <CardTitle className="text-slate-800">User Activity Over Time</CardTitle>
+          <CardTitle className="text-foreground">User Activity Over Time</CardTitle>
         </CardHeader>
         <CardContent>
           <ResponsiveContainer width="100%" height={280}>
             <AreaChart data={dailyData}>
               <defs>
                 <linearGradient id="colorViews" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#00AFE5" stopOpacity={0.2} />
-                  <stop offset="95%" stopColor="#00AFE5" stopOpacity={0} />
+                  <stop offset="5%" stopColor="#4F90B5" stopOpacity={0.2} />
+                  <stop offset="95%" stopColor="#4F90B5" stopOpacity={0} />
                 </linearGradient>
                 <linearGradient id="colorFavs" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="5%" stopColor="#ef4444" stopOpacity={0.2} />
@@ -520,7 +520,7 @@ export default function AnalyticsDashboard({ allUsers, allViews, alerts, savedPr
               <YAxis tick={{ fontSize: 11 }} />
               <Tooltip />
               <Legend />
-              <Area type="monotone" dataKey="Property Views" stroke="#00AFE5" fill="url(#colorViews)" strokeWidth={2} />
+              <Area type="monotone" dataKey="Property Views" stroke="#4F90B5" fill="url(#colorViews)" strokeWidth={2} />
               <Area type="monotone" dataKey="Favorites" stroke="#ef4444" fill="url(#colorFavs)" strokeWidth={2} />
               <Area type="monotone" dataKey="AI Chats" stroke="#10b981" fill="url(#colorChats)" strokeWidth={2} />
             </AreaChart>
@@ -532,13 +532,13 @@ export default function AnalyticsDashboard({ allUsers, allViews, alerts, savedPr
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
 
         {/* Top Cities by Listings */}
-        <Card className="bg-white shadow border-slate-200">
+        <Card className="bg-card shadow border-border">
           <CardHeader>
-            <CardTitle className="text-slate-800 text-base">Top Cities by Listings</CardTitle>
+            <CardTitle className="text-foreground text-base">Top Cities by Listings</CardTitle>
           </CardHeader>
           <CardContent>
             {topCitiesByListings.length === 0 ? (
-              <p className="text-center text-slate-400 text-sm py-8">No data yet</p>
+              <p className="text-center text-muted-foreground text-sm py-8">No data yet</p>
             ) : (
               <ResponsiveContainer width="100%" height={200}>
                 <BarChart data={topCitiesByListings} layout="vertical">
@@ -546,7 +546,7 @@ export default function AnalyticsDashboard({ allUsers, allViews, alerts, savedPr
                   <XAxis type="number" tick={{ fontSize: 10 }} />
                   <YAxis dataKey="name" type="category" tick={{ fontSize: 10 }} width={80} />
                   <Tooltip />
-                  <Bar dataKey="count" fill="#00AFE5" radius={[0, 4, 4, 0]} />
+                  <Bar dataKey="count" fill="#4F90B5" radius={[0, 4, 4, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             )}
@@ -554,9 +554,9 @@ export default function AnalyticsDashboard({ allUsers, allViews, alerts, savedPr
         </Card>
 
         {/* Price range interest */}
-        <Card className="bg-white shadow border-slate-200">
+        <Card className="bg-card shadow border-border">
           <CardHeader>
-            <CardTitle className="text-slate-800 text-base">Search Price Ranges</CardTitle>
+            <CardTitle className="text-foreground text-base">Search Price Ranges</CardTitle>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={200}>
@@ -565,16 +565,16 @@ export default function AnalyticsDashboard({ allUsers, allViews, alerts, savedPr
                 <XAxis type="number" tick={{ fontSize: 10 }} />
                 <YAxis dataKey="name" type="category" tick={{ fontSize: 10 }} width={80} />
                 <Tooltip />
-                <Bar dataKey="count" fill="#00AFE5" radius={[0, 4, 4, 0]} />
+                <Bar dataKey="count" fill="#4F90B5" radius={[0, 4, 4, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </CardContent>
         </Card>
 
         {/* Interaction types + Alert distribution */}
-        <Card className="bg-white shadow border-slate-200">
+        <Card className="bg-card shadow border-border">
           <CardHeader>
-            <CardTitle className="text-slate-800 text-base">Interaction Types</CardTitle>
+            <CardTitle className="text-foreground text-base">Interaction Types</CardTitle>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={200}>
@@ -592,9 +592,9 @@ export default function AnalyticsDashboard({ allUsers, allViews, alerts, savedPr
       </div>
 
       {/* Hourly activity heatmap */}
-      <Card className="bg-white shadow border-slate-200">
+      <Card className="bg-card shadow border-border">
         <CardHeader>
-          <CardTitle className="text-slate-800">Peak Activity Hours</CardTitle>
+          <CardTitle className="text-foreground">Peak Activity Hours</CardTitle>
         </CardHeader>
         <CardContent>
           <ResponsiveContainer width="100%" height={200}>
@@ -603,7 +603,7 @@ export default function AnalyticsDashboard({ allUsers, allViews, alerts, savedPr
               <XAxis dataKey="hour" tick={{ fontSize: 10 }} interval={2} />
               <YAxis tick={{ fontSize: 11 }} />
               <Tooltip />
-              <Bar dataKey="views" fill="#00AFE5" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="views" fill="#4F90B5" radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </CardContent>
@@ -613,37 +613,37 @@ export default function AnalyticsDashboard({ allUsers, allViews, alerts, savedPr
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
 
         {/* Most active users */}
-        <Card className="bg-white shadow border-slate-200">
+        <Card className="bg-card shadow border-border">
           <CardHeader>
-            <CardTitle className="text-slate-800 text-base flex items-center gap-2">
+            <CardTitle className="text-foreground text-base flex items-center gap-2">
               <Star className="h-4 w-4 text-amber-500" />
               Most Active Users
             </CardTitle>
           </CardHeader>
           <CardContent>
             {topUsers.length === 0 ? (
-              <p className="text-slate-400 text-sm text-center py-6">No activity in this period</p>
+              <p className="text-muted-foreground text-sm text-center py-6">No activity in this period</p>
             ) : (
               <div className="space-y-2">
                 {topUsers.map((u, i) => (
-                  <div key={u.userId} className="flex items-center justify-between py-2 border-b border-slate-50 last:border-0">
+                  <div key={u.userId} className="flex items-center justify-between py-2 border-b border-border last:border-0">
                     <div className="flex items-center gap-3 min-w-0 flex-1">
-                      <span className="text-xs font-bold text-slate-400 w-5 flex-shrink-0">#{i + 1}</span>
+                      <span className="text-xs font-bold text-muted-foreground w-5 flex-shrink-0">#{i + 1}</span>
                       <div className="min-w-0 flex-1">
-                        <p className="text-sm font-medium text-slate-800 truncate">
+                        <p className="text-sm font-medium text-foreground truncate">
                           {u.displayName}
                         </p>
                         {u.fullName && u.email && (
-                          <p className="text-xs text-slate-500 truncate">{u.email}</p>
+                          <p className="text-xs text-muted-foreground truncate">{u.email}</p>
                         )}
-                        <div className="flex gap-3 text-xs text-slate-400 mt-0.5">
+                        <div className="flex gap-3 text-xs text-muted-foreground mt-0.5">
                           <span className="flex items-center gap-1"><Eye className="h-3 w-3" />{u.views}</span>
                           <span className="flex items-center gap-1"><Heart className="h-3 w-3" />{u.favorites}</span>
                           <span className="flex items-center gap-1"><Activity className="h-3 w-3" />{u.chats}</span>
                         </div>
                       </div>
                     </div>
-                    <Badge className="bg-[#00AFE5]/10 text-[#00AFE5] border-0 text-xs flex-shrink-0">{u.views} views</Badge>
+                    <Badge className="bg-[#4F90B5]/10 text-[#4F90B5] border-0 text-xs flex-shrink-0">{u.views} views</Badge>
                   </div>
                 ))}
               </div>
@@ -652,46 +652,46 @@ export default function AnalyticsDashboard({ allUsers, allViews, alerts, savedPr
         </Card>
 
         {/* Top viewed properties */}
-        <Card className="bg-white shadow border-slate-200">
+        <Card className="bg-card shadow border-border">
           <CardHeader>
-            <CardTitle className="text-slate-800 text-base flex items-center gap-2">
-              <Home className="h-4 w-4 text-[#00AFE5]" />
+            <CardTitle className="text-foreground text-base flex items-center gap-2">
+              <Home className="h-4 w-4 text-[#4F90B5]" />
               Top Viewed Properties
             </CardTitle>
           </CardHeader>
           <CardContent>
             {topPropertiesByViews.length === 0 ? (
-              <p className="text-slate-400 text-sm text-center py-6">No views in this period</p>
+              <p className="text-muted-foreground text-sm text-center py-6">No views in this period</p>
             ) : (
               <div className="space-y-2">
                 {topPropertiesByViews.map((p, i) => (
                   <Link
                     key={p.id}
                     to={createPageUrl('PropertyDetail') + `?id=${p.id}`}
-                    className="flex items-center justify-between py-2.5 px-2 border-b border-slate-50 last:border-0 rounded-lg hover:bg-slate-50 transition-colors group"
+                    className="flex items-center justify-between py-2.5 px-2 border-b border-border last:border-0 rounded-lg hover:bg-muted transition-colors group"
                   >
                     <div className="flex items-center gap-3 min-w-0">
-                      <span className="text-xs font-bold text-slate-400 w-5 flex-shrink-0">#{i + 1}</span>
+                      <span className="text-xs font-bold text-muted-foreground w-5 flex-shrink-0">#{i + 1}</span>
                       <div className="min-w-0">
-                        <p className="text-sm font-medium text-slate-800 truncate group-hover:text-[#00AFE5] transition-colors">
+                        <p className="text-sm font-medium text-foreground truncate group-hover:text-[#4F90B5] transition-colors">
                           {p.address}{p.city ? `, ${p.city}` : ''}
                         </p>
                         {p.price > 0 && (
-                          <p className="text-xs text-slate-400">
+                          <p className="text-xs text-muted-foreground">
                             ${p.price.toLocaleString()}
                           </p>
                         )}
                       </div>
                     </div>
                     <div className="flex items-center gap-2 flex-shrink-0">
-                      <div className="h-2 bg-slate-100 rounded-full w-16 overflow-hidden">
+                      <div className="h-2 bg-muted rounded-full w-16 overflow-hidden">
                         <div
-                          className="h-2 bg-[#00AFE5] rounded-full"
+                          className="h-2 bg-[#4F90B5] rounded-full"
                           style={{ width: `${(p.views / topPropertiesByViews[0].views) * 100}%` }}
                         />
                       </div>
-                      <span className="text-sm font-semibold text-slate-700 w-8 text-right">{p.views}</span>
-                      <ExternalLink className="h-3 w-3 text-slate-300 group-hover:text-[#00AFE5]" />
+                      <span className="text-sm font-semibold text-muted-foreground w-8 text-right">{p.views}</span>
+                      <ExternalLink className="h-3 w-3 text-muted-foreground/70 group-hover:text-[#4F90B5]" />
                     </div>
                   </Link>
                 ))}
@@ -704,32 +704,32 @@ export default function AnalyticsDashboard({ allUsers, allViews, alerts, savedPr
       {/* Row 4: Favorited properties + Alert distribution */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Most favorited properties */}
-        <Card className="bg-white shadow border-slate-200">
+        <Card className="bg-card shadow border-border">
           <CardHeader>
-            <CardTitle className="text-slate-800 text-base flex items-center gap-2">
+            <CardTitle className="text-foreground text-base flex items-center gap-2">
               <Heart className="h-4 w-4 text-red-500" />
               Most Favorited Properties
             </CardTitle>
           </CardHeader>
           <CardContent>
             {topPropertiesByFavorites.length === 0 ? (
-              <p className="text-slate-400 text-sm text-center py-6">No favorites in this period</p>
+              <p className="text-muted-foreground text-sm text-center py-6">No favorites in this period</p>
             ) : (
               <div className="space-y-2">
                 {topPropertiesByFavorites.map((p, i) => (
                   <Link
                     key={p.id}
                     to={createPageUrl('PropertyDetail') + `?id=${p.id}`}
-                    className="flex items-center justify-between py-2.5 px-2 border-b border-slate-50 last:border-0 rounded-lg hover:bg-slate-50 transition-colors group"
+                    className="flex items-center justify-between py-2.5 px-2 border-b border-border last:border-0 rounded-lg hover:bg-muted transition-colors group"
                   >
                     <div className="flex items-center gap-3 min-w-0">
-                      <span className="text-xs font-bold text-slate-400 w-5 flex-shrink-0">#{i + 1}</span>
+                      <span className="text-xs font-bold text-muted-foreground w-5 flex-shrink-0">#{i + 1}</span>
                       <div className="min-w-0">
-                        <p className="text-sm font-medium text-slate-800 truncate group-hover:text-red-500 transition-colors">
+                        <p className="text-sm font-medium text-foreground truncate group-hover:text-red-500 transition-colors">
                           {p.address}{p.city ? `, ${p.city}` : ''}
                         </p>
                         {p.price > 0 && (
-                          <p className="text-xs text-slate-400">${p.price.toLocaleString()}</p>
+                          <p className="text-xs text-muted-foreground">${p.price.toLocaleString()}</p>
                         )}
                       </div>
                     </div>
@@ -740,8 +740,8 @@ export default function AnalyticsDashboard({ allUsers, allViews, alerts, savedPr
                           style={{ width: `${(p.favorites / (topPropertiesByFavorites[0]?.favorites || 1)) * 100}%` }}
                         />
                       </div>
-                      <span className="text-sm font-semibold text-slate-700 w-8 text-right">{p.favorites}</span>
-                      <ExternalLink className="h-3 w-3 text-slate-300 group-hover:text-red-500" />
+                      <span className="text-sm font-semibold text-muted-foreground w-8 text-right">{p.favorites}</span>
+                      <ExternalLink className="h-3 w-3 text-muted-foreground/70 group-hover:text-red-500" />
                     </div>
                   </Link>
                 ))}
@@ -751,9 +751,9 @@ export default function AnalyticsDashboard({ allUsers, allViews, alerts, savedPr
         </Card>
 
         {/* Alert distribution */}
-        <Card className="bg-white shadow border-slate-200">
+        <Card className="bg-card shadow border-border">
           <CardHeader>
-            <CardTitle className="text-slate-800 text-base">Alert Types</CardTitle>
+            <CardTitle className="text-foreground text-base">Alert Types</CardTitle>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={200}>
@@ -767,7 +767,7 @@ export default function AnalyticsDashboard({ allUsers, allViews, alerts, savedPr
               </PieChart>
             </ResponsiveContainer>
             {alertTypeData.length === 0 && (
-              <p className="text-center text-slate-400 text-sm pt-8">No alerts yet</p>
+              <p className="text-center text-muted-foreground text-sm pt-8">No alerts yet</p>
             )}
           </CardContent>
         </Card>

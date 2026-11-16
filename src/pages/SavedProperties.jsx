@@ -62,7 +62,7 @@ export default function SavedProperties() {
   if (isLoadingAuth) {
     return (
       <div className="flex justify-center items-center min-h-screen">
-        <Loader2 className="h-8 w-8 animate-spin text-slate-600" />
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
       </div>
     );
   }
@@ -75,15 +75,15 @@ export default function SavedProperties() {
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
       <div className="crandell-container py-12">
         <div className="mb-8">
-          <h1 className="text-3xl md:text-4xl font-bold text-slate-900 mb-2">Saved Homes</h1>
-          <p className="text-slate-600">Your favorite homes and saved searches, all in one place</p>
+          <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-2">Saved Homes</h1>
+          <p className="text-muted-foreground">Your favorite homes and saved searches, all in one place</p>
         </div>
 
         <SavedSearchesList user={user} />
 
         {isLoading ? (
           <div className="flex justify-center items-center py-20">
-            <Loader2 className="h-8 w-8 animate-spin text-slate-600" />
+            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
           </div>
         ) : savedProperties.length === 0 ? (
           <EmptyState
@@ -100,10 +100,10 @@ export default function SavedProperties() {
           />
         ) : (
           <>
-            <div className="mb-8 bg-white rounded-lg p-6 shadow-sm border border-slate-100">
+            <div className="mb-8 bg-card rounded-lg p-6 shadow-sm border border-border">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 <div>
-                  <label className="text-sm font-medium text-slate-700 block mb-2">Sort By</label>
+                  <label className="text-sm font-medium text-muted-foreground block mb-2">Sort By</label>
                   <Select value={sortBy} onValueChange={setSortBy}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
@@ -116,7 +116,7 @@ export default function SavedProperties() {
                   </Select>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-slate-700 block mb-2">Property Type</label>
+                  <label className="text-sm font-medium text-muted-foreground block mb-2">Property Type</label>
                   <Select value={filterType} onValueChange={setFilterType}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
@@ -131,11 +131,11 @@ export default function SavedProperties() {
                   </Select>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-slate-700 block mb-2">Min Price</label>
+                  <label className="text-sm font-medium text-muted-foreground block mb-2">Min Price</label>
                   <Input type="number" placeholder="$0" value={minPrice} onChange={(e) => setMinPrice(e.target.value)} />
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-slate-700 block mb-2">Max Price</label>
+                  <label className="text-sm font-medium text-muted-foreground block mb-2">Max Price</label>
                   <Input type="number" placeholder="$999,999" value={maxPrice} onChange={(e) => setMaxPrice(e.target.value)} />
                 </div>
               </div>

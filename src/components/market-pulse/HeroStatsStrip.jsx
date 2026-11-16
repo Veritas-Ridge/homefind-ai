@@ -41,16 +41,16 @@ function formatMoI(moi) {
 
 function StatCard({ label, value, subtext, icon: Icon }) {
   return (
-    <Card className="bg-white shadow-sm border-slate-200">
+    <Card className="bg-card shadow-sm border-border">
       <CardContent className="p-5">
         <div className="flex items-start justify-between">
           <div className="flex-1 min-w-0">
-            <p className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1.5">{label}</p>
-            <p className="text-3xl font-bold text-slate-900 leading-none">{value}</p>
-            {subtext && <p className="text-xs text-slate-400 mt-2 truncate">{subtext}</p>}
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1.5">{label}</p>
+            <p className="text-3xl font-bold text-foreground leading-none">{value}</p>
+            {subtext && <p className="text-xs text-muted-foreground mt-2 truncate">{subtext}</p>}
           </div>
-          <div className="p-2.5 rounded-xl bg-[#00AFE5]/10 flex-shrink-0 ml-3">
-            <Icon className="h-5 w-5 text-[#00AFE5]" />
+          <div className="p-2.5 rounded-xl bg-[#4F90B5]/10 flex-shrink-0 ml-3">
+            <Icon className="h-5 w-5 text-[#4F90B5]" />
           </div>
         </div>
       </CardContent>
@@ -98,7 +98,7 @@ export default function HeroStatsStrip({ data }) {
         </p>
       )}
       {d.rpc_available && (
-        <p className="text-xs text-slate-400 mt-3">
+        <p className="text-xs text-muted-foreground mt-3">
           Sale-based metrics use a lagged reporting window to account for MLS data delays.
         </p>
       )}

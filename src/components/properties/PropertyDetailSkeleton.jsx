@@ -5,7 +5,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 export default function PropertyDetailSkeleton() {
   return (
     <div className="min-h-screen pb-12 bg-background">
-      <div className="bg-white border-b border-border">
+      <div className="bg-card border-b border-border">
         <div className="crandell-container py-4">
           <Skeleton className="h-9 w-32" />
         </div>

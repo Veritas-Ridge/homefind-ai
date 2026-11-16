@@ -5,41 +5,39 @@ import { cva } from "class-variance-authority";
 import { cn } from "@/lib/utils"
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
+  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-full text-sm font-semibold tracking-[0.02em] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
   {
     variants: {
       variant: {
         default:
-          "bg-primary text-primary-foreground shadow hover:bg-primary/90",
+          "bg-secondary text-secondary-foreground shadow-sm hover:bg-[var(--crandell-ink-hover)]",
         destructive:
           "bg-destructive text-destructive-foreground shadow-sm hover:bg-destructive/90",
         outline:
-          "border border-input bg-background shadow-sm hover:bg-accent hover:text-accent-foreground",
+          "border border-input bg-card shadow-sm hover:bg-accent hover:text-accent-foreground",
         secondary:
           "bg-secondary text-secondary-foreground shadow-sm hover:bg-secondary/80",
         ghost: "hover:bg-accent hover:text-accent-foreground",
         link: "text-primary underline-offset-4 hover:underline",
-        // Brand CTAs — match crandellrealestate.com's square, uppercase,
-        // letter-spaced buttons ("START YOUR SEARCH", "SCHEDULE A STRATEGY CALL").
+        // Brand CTAs, matching crandellrealestate.com: rounded pills,
+        // sentence case. Ink is the primary button on light backgrounds;
+        // brand blue is the primary button on dark or busy backgrounds.
         brand:
-          "bg-primary text-primary-foreground shadow-sm hover:bg-[var(--crandell-primary-hover)] uppercase tracking-[0.08em] font-medium",
+          "bg-secondary text-secondary-foreground shadow-sm hover:bg-[var(--crandell-ink-hover)]",
+        brandBlue:
+          "bg-[var(--crandell-blue)] text-white shadow-sm hover:bg-[var(--crandell-blue-hover)]",
         brandDark:
-          "bg-secondary text-secondary-foreground shadow-sm hover:bg-[var(--crandell-charcoal-hover)] uppercase tracking-[0.08em] font-medium",
+          "bg-secondary text-secondary-foreground shadow-sm hover:bg-[var(--crandell-ink-hover)]",
         brandOutline:
-          "border border-secondary text-secondary bg-transparent hover:bg-secondary hover:text-secondary-foreground uppercase tracking-[0.08em] font-medium",
+          "border border-secondary text-secondary bg-transparent hover:bg-secondary hover:text-secondary-foreground",
       },
       size: {
-        default: "h-9 md:h-9 h-11 px-4 py-2",
-        sm: "h-8 md:h-8 h-11 rounded-md px-3 text-xs md:text-xs text-sm",
-        lg: "h-11 rounded-md px-8",
+        default: "h-11 md:h-10 px-5 py-2",
+        sm: "h-11 md:h-8 px-3.5 text-sm md:text-xs",
+        lg: "h-12 px-7 text-[15px]",
         icon: "h-11 w-11 md:h-9 md:w-9",
       },
     },
-    // compoundVariants are emitted after size classes, so this wins over the
-    // rounded-md that the sm/lg sizes carry.
-    compoundVariants: [
-      { variant: ["brand", "brandDark", "brandOutline"], class: "rounded-[2px]" },
-    ],
     defaultVariants: {
       variant: "default",
       size: "default",

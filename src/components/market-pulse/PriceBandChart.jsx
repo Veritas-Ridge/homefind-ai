@@ -9,16 +9,16 @@ import { BarChart3 } from 'lucide-react';
  * market inventory is concentrated.
  */
 
-const COLORS = ['#00AFE5', '#3a9dd8', '#1e7cc0', '#0c5fa8', '#06438a', '#03306b'];
+const COLORS = ['#4F90B5', '#3a9dd8', '#1e7cc0', '#0c5fa8', '#06438a', '#03306b'];
 
 function CustomTooltip({ active, payload }) {
   if (!active || !payload || !payload.length) return null;
   const row = payload[0].payload;
   return (
-    <div className="bg-white border border-slate-200 rounded-lg shadow-lg px-3 py-2">
-      <div className="text-xs font-semibold text-slate-900">{row.label}</div>
-      <div className="text-sm text-[#00AFE5] font-bold">{row.count.toLocaleString()} listings</div>
-      {row.pct != null && <div className="text-xs text-slate-400 mt-0.5">{row.pct}% of active inventory</div>}
+    <div className="bg-card border border-border rounded-lg shadow-lg px-3 py-2">
+      <div className="text-xs font-semibold text-foreground">{row.label}</div>
+      <div className="text-sm text-[#4F90B5] font-bold">{row.count.toLocaleString()} listings</div>
+      {row.pct != null && <div className="text-xs text-muted-foreground mt-0.5">{row.pct}% of active inventory</div>}
     </div>
   );
 }
@@ -31,14 +31,14 @@ export default function PriceBandChart({ bands }) {
   }));
 
   return (
-    <Card className="bg-white shadow-sm border-slate-200">
+    <Card className="bg-card shadow-sm border-border">
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center gap-2 text-base">
-            <BarChart3 className="h-4 w-4 text-[#00AFE5]" />
+            <BarChart3 className="h-4 w-4 text-[#4F90B5]" />
             Active Inventory by Price Band
           </CardTitle>
-          <span className="text-xs text-slate-400">{total.toLocaleString()} total listings</span>
+          <span className="text-xs text-muted-foreground">{total.toLocaleString()} total listings</span>
         </div>
       </CardHeader>
       <CardContent>

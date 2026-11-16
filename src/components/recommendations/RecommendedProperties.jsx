@@ -33,20 +33,20 @@ export default function RecommendedProperties({ user, savedPropertyIds = [], onF
   }
 
   return (
-    <div className="mt-12 pt-8 border-t border-slate-200 dark:border-slate-700">
+    <div className="mt-12 pt-8 border-t border-border dark:border-secondary">
       <div className="flex items-center gap-2 mb-6">
         <Sparkles className="h-6 w-6 text-amber-500" />
-        <h2 className="text-2xl font-bold text-slate-900 dark:text-white">
+        <h2 className="text-2xl font-bold text-foreground dark:text-white">
           Recommended for You
         </h2>
-        <p className="text-sm text-slate-600 dark:text-slate-400 ml-auto">
+        <p className="text-sm text-muted-foreground dark:text-muted-foreground ml-auto">
           Based on your preferences & activity
         </p>
       </div>
 
       {loading ? (
         <div className="flex justify-center py-12">
-          <Loader2 className="h-8 w-8 animate-spin text-slate-600 dark:text-slate-400" />
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground dark:text-muted-foreground" />
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-4 md:gap-6">

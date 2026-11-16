@@ -259,7 +259,7 @@ export default function AIAssistant({ user, filters, propertyId, onApplyFilters 
       role="dialog"
       aria-modal="true"
       aria-label="AI home search assistant"
-      className="fixed z-[60] inset-0 md:inset-auto md:right-6 md:bottom-16 md:w-[26rem] md:h-[min(40rem,calc(100dvh-8rem))] bg-white md:rounded-xl md:border md:border-border shadow-2xl flex flex-col"
+      className="fixed z-[60] inset-0 md:inset-auto md:right-6 md:bottom-16 md:w-[26rem] md:h-[min(40rem,calc(100dvh-8rem))] bg-card md:rounded-xl md:border md:border-border shadow-2xl flex flex-col"
       style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
     >
       {/* Header */}
@@ -298,7 +298,7 @@ export default function AIAssistant({ user, filters, propertyId, onApplyFilters 
                   key={p}
                   type="button"
                   onClick={() => send(p)}
-                  className="text-left text-sm px-3 py-2 rounded-lg border border-border bg-white hover:border-primary hover:text-primary transition-colors"
+                  className="text-left text-sm px-3 py-2 rounded-lg border border-border bg-card hover:border-primary hover:text-primary transition-colors"
                 >
                   {p}
                 </button>
@@ -314,7 +314,7 @@ export default function AIAssistant({ user, filters, propertyId, onApplyFilters 
             ) : (
               <>
                 {(m.text || isStreaming) && (
-                  <div className={`max-w-[92%] rounded-2xl rounded-bl-sm px-3 py-2 text-sm bg-white border border-border ${m.error ? 'text-destructive' : 'text-foreground'}`}>
+                  <div className={`max-w-[92%] rounded-2xl rounded-bl-sm px-3 py-2 text-sm bg-card border border-border ${m.error ? 'text-destructive' : 'text-foreground'}`}>
                     {m.text ? (
                       <ReactMarkdown components={MARKDOWN_COMPONENTS}>{m.text}</ReactMarkdown>
                     ) : (
@@ -344,7 +344,7 @@ export default function AIAssistant({ user, filters, propertyId, onApplyFilters 
       {/* Input */}
       <form
         onSubmit={(e) => { e.preventDefault(); send(input); }}
-        className="border-t border-border bg-white px-3 py-3 md:rounded-b-xl"
+        className="border-t border-border bg-card px-3 py-3 md:rounded-b-xl"
       >
         <div className="flex gap-2">
           <Input
@@ -372,7 +372,7 @@ export default function AIAssistant({ user, filters, propertyId, onApplyFilters 
 function SearchCard({ card, canApplyInPlace, onApply, onUndo }) {
   const summary = summarizeFilters(card.filters);
   return (
-    <div className="max-w-[92%] rounded-xl border border-border bg-white overflow-hidden">
+    <div className="max-w-[92%] rounded-xl border border-border bg-card overflow-hidden">
       <div className="px-3 py-2 border-b border-border">
         <p className="text-sm font-medium text-foreground">
           {card.count.toLocaleString()} {card.count === 1 ? 'home matches' : 'homes match'}
@@ -452,7 +452,7 @@ function TourCard({ card, user, onDone }) {
   };
 
   return (
-    <div className="max-w-[92%] rounded-xl border-2 border-primary bg-white p-3 space-y-2">
+    <div className="max-w-[92%] rounded-xl border-2 border-primary bg-card p-3 space-y-2">
       <div className="flex items-start gap-2">
         <CalendarCheck className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" aria-hidden="true" />
         <div>

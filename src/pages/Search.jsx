@@ -635,7 +635,7 @@ export default function Search() {
   return (
     <div className="min-h-screen bg-background">
       {isRefreshing && (
-        <div className="fixed top-16 left-1/2 -translate-x-1/2 z-50 bg-white rounded-full px-4 py-2 shadow-lg">
+        <div className="fixed top-16 left-1/2 -translate-x-1/2 z-50 bg-card rounded-full px-4 py-2 shadow-lg">
           <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
         </div>
       )}
@@ -684,7 +684,7 @@ export default function Search() {
                     id="sort-select"
                     value={sortBy}
                     onChange={(e) => { setSortBy(e.target.value); setCurrentPage(1); }}
-                    className="flex-1 md:flex-none min-w-0 h-11 md:h-9 text-sm border border-border rounded-md px-3 bg-white text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                    className="flex-1 md:flex-none min-w-0 h-11 md:h-9 text-sm border border-border rounded-md px-3 bg-card text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
                   >
                     {sortOptions.map(opt => (
                       <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -783,7 +783,7 @@ export default function Search() {
             <div className="flex items-center gap-2">
               {comparePropertyIds.length >= 2 && (
                 <Link to={createPageUrl('PropertyCompare') + `?ids=${comparePropertyIds.join(',')}`}>
-                  <Button size="sm" className="bg-white text-secondary hover:bg-gray-100 select-none">
+                  <Button size="sm" className="bg-card text-secondary hover:bg-muted select-none">
                     Compare Now
                   </Button>
                 </Link>

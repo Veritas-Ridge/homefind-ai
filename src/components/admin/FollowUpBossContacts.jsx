@@ -80,13 +80,13 @@ export default function FollowUpBossContacts() {
   ) || [];
 
   return (
-    <Card className="bg-white border-slate-200">
+    <Card className="bg-card border-border">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Mail className="h-5 w-5" />
           Follow Up Boss Contacts
         </CardTitle>
-        <p className="text-sm text-slate-600 mt-2">
+        <p className="text-sm text-muted-foreground mt-2">
           Import and invite contacts from Follow Up Boss to use the platform
         </p>
       </CardHeader>
@@ -94,21 +94,21 @@ export default function FollowUpBossContacts() {
       <CardContent className="space-y-6">
         {/* Stats */}
         <div className="grid grid-cols-3 gap-4">
-          <div className="bg-slate-50 p-4 rounded-lg border border-slate-200">
-            <p className="text-sm text-slate-600">Total Contacts</p>
-            <p className="text-2xl font-bold text-slate-900">
+          <div className="bg-muted p-4 rounded-lg border border-border">
+            <p className="text-sm text-muted-foreground">Total Contacts</p>
+            <p className="text-2xl font-bold text-foreground">
               {isLoading ? '-' : data?.total_contacts || 0}
             </p>
           </div>
-          <div className="bg-slate-50 p-4 rounded-lg border border-slate-200">
-            <p className="text-sm text-slate-600">Invited Users</p>
-            <p className="text-2xl font-bold text-slate-900">
+          <div className="bg-muted p-4 rounded-lg border border-border">
+            <p className="text-sm text-muted-foreground">Invited Users</p>
+            <p className="text-2xl font-bold text-foreground">
               {isLoading ? '-' : data?.invited_users || 0}
             </p>
           </div>
-          <div className="bg-slate-50 p-4 rounded-lg border border-slate-200">
-            <p className="text-sm text-slate-600">Available to Invite</p>
-            <p className="text-2xl font-bold text-slate-900">
+          <div className="bg-muted p-4 rounded-lg border border-border">
+            <p className="text-sm text-muted-foreground">Available to Invite</p>
+            <p className="text-2xl font-bold text-foreground">
               {isLoading ? '-' : data?.uninvited_contacts || 0}
             </p>
           </div>
@@ -116,12 +116,12 @@ export default function FollowUpBossContacts() {
 
         {/* Search */}
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder="Search by name or email..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10 border-slate-300"
+            className="pl-10 border-border"
           />
         </div>
 
@@ -129,11 +129,11 @@ export default function FollowUpBossContacts() {
         <div className="space-y-2 max-h-96 overflow-y-auto">
           {isLoading ? (
             <div className="flex justify-center py-8">
-              <Loader2 className="h-6 w-6 animate-spin text-slate-400" />
+              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
             </div>
           ) : filteredContacts.length === 0 ? (
             <div className="text-center py-8">
-              <p className="text-slate-600">
+              <p className="text-muted-foreground">
                 {searchTerm ? 'No contacts match your search' : 'No contacts available to invite'}
               </p>
             </div>
@@ -143,24 +143,24 @@ export default function FollowUpBossContacts() {
               return (
                 <div
                   key={contact.id}
-                  className="flex items-center justify-between p-4 bg-slate-50 rounded-lg border border-slate-200 hover:border-slate-300 transition-colors"
+                  className="flex items-center justify-between p-4 bg-muted rounded-lg border border-border hover:border-border transition-colors"
                 >
                   <div className="flex-1">
-                    <p className="font-semibold text-slate-900">{contact.name}</p>
-                    <p className="text-sm text-slate-600">
+                    <p className="font-semibold text-foreground">{contact.name}</p>
+                    <p className="text-sm text-muted-foreground">
                       {typeof contact.email === 'string' 
                         ? contact.email 
                         : contact.email?.value || 'No email'}
                     </p>
                     {contact.phone && (
-                      <p className="text-xs text-slate-500">
+                      <p className="text-xs text-muted-foreground">
                         {typeof contact.phone === 'string' 
                           ? contact.phone 
                           : contact.phone?.value || ''}
                       </p>
                     )}
                     {contact.company && (
-                      <Badge variant="secondary" className="mt-1 bg-slate-200 text-slate-700 border-0">
+                      <Badge variant="secondary" className="mt-1 bg-muted text-muted-foreground border-0">
                         {contact.company}
                       </Badge>
                     )}
@@ -213,7 +213,7 @@ export default function FollowUpBossContacts() {
                           onClick={() => handleInvite(contact)}
                           disabled={invitingId === contact.id}
                           size="sm"
-                          className="bg-slate-800 hover:bg-slate-700 text-white"
+                          className="bg-secondary hover:bg-[var(--crandell-ink-hover)] text-white"
                         >
                           {invitingId === contact.id ? (
                             <>

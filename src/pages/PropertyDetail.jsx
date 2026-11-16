@@ -426,7 +426,7 @@ export default function PropertyDetail() {
       {showLoginGate && <LoginGateModal onClose={() => setShowLoginGate(false)} />}
 
       {/* Back to search bar */}
-      <div className="bg-white border-b border-border">
+      <div className="bg-card border-b border-border">
         <div className="crandell-container py-1 md:py-4">
           <Link to={createPageUrl('Search')}>
             <Button variant="ghost" className="text-muted-foreground hover:text-foreground">
@@ -480,7 +480,7 @@ export default function PropertyDetail() {
                   </>
                 )}
                 {images.length > 1 && (
-                  <button type="button" onClick={() => setShowGrid(true)} className="absolute bottom-4 left-4 h-9 px-3 bg-white/95 hover:bg-white rounded-full flex items-center gap-2 text-sm font-medium text-foreground shadow focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"><LayoutGrid className="h-4 w-4" aria-hidden="true" />View all {images.length} photos</button>
+                  <button type="button" onClick={() => setShowGrid(true)} className="absolute bottom-4 left-4 h-9 px-3 bg-white/95 hover:bg-card rounded-full flex items-center gap-2 text-sm font-medium text-foreground shadow focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"><LayoutGrid className="h-4 w-4" aria-hidden="true" />View all {images.length} photos</button>
                 )}
                 <button type="button" onClick={() => setIsFullscreen(true)} aria-label="View image fullscreen" className="absolute top-4 right-4 h-10 w-10 bg-black/50 hover:bg-black/70 backdrop-blur-sm rounded-full flex items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"><Expand className="h-5 w-5 text-white" aria-hidden="true" /></button>
                 {images.length > 1 && (
@@ -496,7 +496,7 @@ export default function PropertyDetail() {
                           role="tab"
                           aria-selected={idx === currentImageIndex}
                           aria-label={`Go to image ${idx + 1}`}
-                          className={`h-2 rounded-full transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white ${idx === currentImageIndex ? 'w-8 bg-white' : 'w-2 bg-white/50 hover:bg-white/75'}`}
+                          className={`h-2 rounded-full transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white ${idx === currentImageIndex ? 'w-8 bg-card' : 'w-2 bg-white/50 hover:bg-white/75'}`}
                         />
                       ))}
                     </div>
@@ -835,7 +835,7 @@ export default function PropertyDetail() {
                               className={`py-2 px-3 rounded-md text-sm font-medium border transition-colors ${
                                 loanTermYears === years
                                   ? 'bg-primary text-primary-foreground border-primary'
-                                  : 'bg-white text-foreground border-border hover:border-primary'
+                                  : 'bg-card text-foreground border-border hover:border-primary'
                               }`}
                             >
                               {years} yr
@@ -988,7 +988,7 @@ export default function PropertyDetail() {
             <a
               href="tel:+14805441539"
               aria-label="Call the Crandell Real Estate Team"
-              className="h-11 w-11 flex-shrink-0 rounded-[2px] border border-secondary text-secondary flex items-center justify-center"
+              className="h-11 w-11 flex-shrink-0 rounded-full border border-secondary text-secondary flex items-center justify-center"
             >
               <Phone className="h-5 w-5" />
             </a>
@@ -1150,7 +1150,7 @@ export default function PropertyDetail() {
 
       {/* All-photos grid */}
       {showGrid && (
-        <div className="fixed inset-0 z-50 bg-white overflow-y-auto" role="dialog" aria-modal="true" aria-label="All photos">
+        <div className="fixed inset-0 z-50 bg-card overflow-y-auto" role="dialog" aria-modal="true" aria-label="All photos">
           <div className="sticky top-0 z-10 bg-white/95 backdrop-blur border-b border-border">
             <div className="crandell-container flex items-center justify-between py-3">
               <div className="min-w-0">

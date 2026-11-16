@@ -4,7 +4,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 
 export default function PropertyCardSkeleton() {
   return (
-    <Card className="overflow-hidden bg-white border-border">
+    <Card className="overflow-hidden bg-card border-border">
       <Skeleton className="aspect-[3/2] w-full rounded-none" />
       <CardContent className="p-5">
         <div className="mb-3 space-y-2">

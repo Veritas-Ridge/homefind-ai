@@ -32,7 +32,7 @@ export default function BottomTabs() {
 
   return (
     <div
-      className="md:hidden fixed bottom-0 left-0 right-0 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-700 z-50 select-none"
+      className="md:hidden fixed bottom-0 left-0 right-0 bg-card dark:bg-secondary border-t border-border dark:border-secondary z-50 select-none"
       style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
     >
       <div className="flex justify-around items-center h-16">
@@ -46,8 +46,8 @@ export default function BottomTabs() {
               onClick={(e) => handleTabClick(e, tab.path)}
               className={`flex flex-col items-center justify-center flex-1 h-full transition-colors select-none ${
                 active
-                  ? 'text-slate-900 dark:text-white'
-                  : 'text-slate-500 dark:text-slate-400'
+                  ? 'text-foreground dark:text-white'
+                  : 'text-muted-foreground dark:text-muted-foreground'
               }`}
             >
               <Icon className={`h-6 w-6 mb-1 ${active ? 'fill-current' : ''}`} />
