@@ -135,7 +135,7 @@ function FilterChip({ label, isActive, children, popoverWidth = 280, drawerTitle
       className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium border transition-colors whitespace-nowrap ${
         isActive
           ? 'bg-primary/10 text-primary border-primary'
-          : 'bg-white text-foreground border-border hover:border-primary/50'
+          : 'bg-card text-foreground border-border hover:border-primary/50'
       }`}
     >
       {label}
@@ -160,7 +160,7 @@ function FilterChip({ label, isActive, children, popoverWidth = 280, drawerTitle
             {renderChildren(() => {})}
           </div>
           <div
-            className="flex-shrink-0 border-t border-border bg-white px-4 py-3"
+            className="flex-shrink-0 border-t border-border bg-card px-4 py-3"
             style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}
           >
             <Button
@@ -183,7 +183,7 @@ function FilterChip({ label, isActive, children, popoverWidth = 280, drawerTitle
         // and PropertyMap.jsx's own overlays at z-[1000]. With z-50, the More
         // popover would render UNDER the map.
         <div
-          className="absolute top-full left-0 mt-2 z-[1100] bg-white rounded-lg shadow-xl border border-border p-4"
+          className="absolute top-full left-0 mt-2 z-[1100] bg-card rounded-lg shadow-xl border border-border p-4"
           style={{ width: popoverWidth, maxWidth: '90vw' }}
         >
           {renderChildren(() => setOpen(false))}
@@ -509,7 +509,7 @@ export default function SearchFilters({ onFilterChange, initialFilters = {} }) {
         <button
           onClick={() => { handleChange('bedrooms', ''); close(); }}
           className={`py-2 px-3 rounded-md text-sm font-medium border transition-colors ${
-            !filters.bedrooms ? 'bg-primary text-primary-foreground border-primary' : 'bg-white text-foreground border-border hover:border-primary'
+            !filters.bedrooms ? 'bg-primary text-primary-foreground border-primary' : 'bg-card text-foreground border-border hover:border-primary'
           }`}
         >
           Any
@@ -519,7 +519,7 @@ export default function SearchFilters({ onFilterChange, initialFilters = {} }) {
             key={n}
             onClick={() => { handleChange('bedrooms', n); close(); }}
             className={`py-2 px-3 rounded-md text-sm font-medium border transition-colors ${
-              filters.bedrooms === n ? 'bg-primary text-primary-foreground border-primary' : 'bg-white text-foreground border-border hover:border-primary'
+              filters.bedrooms === n ? 'bg-primary text-primary-foreground border-primary' : 'bg-card text-foreground border-border hover:border-primary'
             }`}
           >
             {n}+
@@ -536,7 +536,7 @@ export default function SearchFilters({ onFilterChange, initialFilters = {} }) {
         <button
           onClick={() => { handleChange('bathrooms', ''); close(); }}
           className={`py-2 px-3 rounded-md text-sm font-medium border transition-colors ${
-            !filters.bathrooms ? 'bg-primary text-primary-foreground border-primary' : 'bg-white text-foreground border-border hover:border-primary'
+            !filters.bathrooms ? 'bg-primary text-primary-foreground border-primary' : 'bg-card text-foreground border-border hover:border-primary'
           }`}
         >
           Any
@@ -546,7 +546,7 @@ export default function SearchFilters({ onFilterChange, initialFilters = {} }) {
             key={n}
             onClick={() => { handleChange('bathrooms', n); close(); }}
             className={`py-2 px-3 rounded-md text-sm font-medium border transition-colors ${
-              filters.bathrooms === n ? 'bg-primary text-primary-foreground border-primary' : 'bg-white text-foreground border-border hover:border-primary'
+              filters.bathrooms === n ? 'bg-primary text-primary-foreground border-primary' : 'bg-card text-foreground border-border hover:border-primary'
             }`}
           >
             {n}+
@@ -598,7 +598,7 @@ export default function SearchFilters({ onFilterChange, initialFilters = {} }) {
           <button
             onClick={() => handleChange('min_garage_spaces', '')}
             className={`py-2 rounded-md text-sm font-medium border ${
-              !filters.min_garage_spaces ? 'bg-primary text-primary-foreground border-primary' : 'bg-white text-foreground border-border'
+              !filters.min_garage_spaces ? 'bg-primary text-primary-foreground border-primary' : 'bg-card text-foreground border-border'
             }`}
           >
             Any
@@ -608,7 +608,7 @@ export default function SearchFilters({ onFilterChange, initialFilters = {} }) {
               key={n}
               onClick={() => handleChange('min_garage_spaces', n)}
               className={`py-2 rounded-md text-sm font-medium border ${
-                filters.min_garage_spaces === n ? 'bg-primary text-primary-foreground border-primary' : 'bg-white text-foreground border-border'
+                filters.min_garage_spaces === n ? 'bg-primary text-primary-foreground border-primary' : 'bg-card text-foreground border-border'
               }`}
             >
               {n}+
@@ -654,14 +654,16 @@ export default function SearchFilters({ onFilterChange, initialFilters = {} }) {
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Address, city, neighborhood, ZIP, or subdivision"
+            placeholder="Address, city, ZIP, subdivision, or MLS #"
             value={filters.query_text || filters.city || filters.subdivision || filters.zip_code || ''}
             onChange={(e) => {
               const val = e.target.value;
               // Pure digits → precise zip_code match (faster, indexed column)
               // Anything else → query_text fuzzy search across address, city,
               // and subdivision so users find homes by neighborhood name
-              if (/^\d+$/.test(val)) {
+              // Up to 5 digits is a ZIP; 6+ digits is an MLS number, which
+              // Search.jsx matches exactly on mls_number via query_text.
+              if (/^\d{1,5}$/.test(val)) {
                 handleBatchChange({ zip_code: val, query_text: '', city: '', subdivision: '' });
               } else {
                 handleBatchChange({ query_text: val, zip_code: '', city: '', subdivision: '' });
@@ -707,7 +709,7 @@ export default function SearchFilters({ onFilterChange, initialFilters = {} }) {
         <Drawer>
           <DrawerTrigger asChild>
             <button
-              className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium border transition-colors whitespace-nowrap bg-white text-foreground border-border hover:border-primary/50`}
+              className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium border transition-colors whitespace-nowrap bg-card text-foreground border-border hover:border-primary/50`}
             >
               <SlidersHorizontal className="h-3.5 w-3.5" />
               More
@@ -722,7 +724,7 @@ export default function SearchFilters({ onFilterChange, initialFilters = {} }) {
               {MoreDrawerContent}
             </div>
             <div
-              className="flex-shrink-0 border-t border-border bg-white px-4 py-3 flex gap-3"
+              className="flex-shrink-0 border-t border-border bg-card px-4 py-3 flex gap-3"
               style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}
             >
               <DrawerClose asChild>

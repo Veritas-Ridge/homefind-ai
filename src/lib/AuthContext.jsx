@@ -1,5 +1,6 @@
 import React, { createContext, useState, useContext, useEffect, useRef, useCallback } from 'react';
 import { supabase } from '@/api/supabaseClient';
+import { getAttribution } from '@/lib/attribution';
 import debug from '@/lib/debug';
 
 const AuthContext = createContext();
@@ -61,6 +62,14 @@ export const AuthProvider = ({ children }) => {
         debug.logAuth('fetchProfile:success', { role: profile.role, is_admin: profile.is_user_admin });
         setUser(profile);
         setIsAuthenticated(true);
+        // Store first touch attribution on the profile once, so the FUB
+        // Registration event (sent ~2 minutes after sign up) carries the
+        // source. Fire and forget: it must never block sign in.
+        const attribution = getAttribution();
+        if (attribution && !profile.attribution) {
+          supabase.from('profiles').update({ attribution }).eq('id', userId)
+            .then(({ error: attrError }) => { if (attrError) debug.logError('fetchProfile:attribution', attrError); });
+        }
       } else {
         debug.logAuth('fetchProfile:noProfile', 'Profile is null after fetch attempt');
       }

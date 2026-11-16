@@ -68,32 +68,32 @@ export default function TopCitiesTable({ rows }) {
   const SortIcon = ({ columnKey }) => {
     if (sortKey !== columnKey) return <ArrowUpDown className="h-3 w-3 opacity-30 inline ml-1" />;
     return sortDir === 'asc' ? (
-      <ArrowUp className="h-3 w-3 text-[#00AFE5] inline ml-1" />
+      <ArrowUp className="h-3 w-3 text-[#4F90B5] inline ml-1" />
     ) : (
-      <ArrowDown className="h-3 w-3 text-[#00AFE5] inline ml-1" />
+      <ArrowDown className="h-3 w-3 text-[#4F90B5] inline ml-1" />
     );
   };
 
   return (
-    <Card className="bg-white shadow-sm border-slate-200">
+    <Card className="bg-card shadow-sm border-border">
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center gap-2 text-base">
-            <Building2 className="h-4 w-4 text-[#00AFE5]" />
+            <Building2 className="h-4 w-4 text-[#4F90B5]" />
             Top Cities by Activity
           </CardTitle>
-          <span className="text-xs text-slate-400">{sortedRows.length} cities · min 50 active</span>
+          <span className="text-xs text-muted-foreground">{sortedRows.length} cities · min 50 active</span>
         </div>
       </CardHeader>
       <CardContent className="p-0">
         <div className="overflow-x-auto">
           <Table>
             <TableHeader>
-              <TableRow className="border-b border-slate-200">
+              <TableRow className="border-b border-border">
                 {COLUMNS.map((col) => (
                   <TableHead
                     key={col.key}
-                    className={`${col.align === 'right' ? 'text-right' : 'text-left'} ${col.width || ''} text-xs font-semibold text-slate-600 uppercase tracking-wide ${col.sortable ? 'cursor-pointer hover:text-slate-900 select-none' : ''}`}
+                    className={`${col.align === 'right' ? 'text-right' : 'text-left'} ${col.width || ''} text-xs font-semibold text-muted-foreground uppercase tracking-wide ${col.sortable ? 'cursor-pointer hover:text-foreground select-none' : ''}`}
                     onClick={col.sortable ? () => handleSort(col.key) : undefined}
                   >
                     {col.label}
@@ -106,12 +106,12 @@ export default function TopCitiesTable({ rows }) {
               {sortedRows.map((row, idx) => (
                 <TableRow
                   key={row.city}
-                  className={`${idx % 2 === 0 ? 'bg-white' : 'bg-slate-50/50'} hover:bg-[#00AFE5]/5 transition-colors border-b border-slate-100`}
+                  className={`${idx % 2 === 0 ? 'bg-card' : 'bg-muted/50'} hover:bg-[#4F90B5]/5 transition-colors border-b border-border`}
                 >
                   {COLUMNS.map((col) => (
                     <TableCell
                       key={col.key}
-                      className={`${col.align === 'right' ? 'text-right tabular-nums' : 'text-left font-medium text-slate-900'} py-3`}
+                      className={`${col.align === 'right' ? 'text-right tabular-nums' : 'text-left font-medium text-foreground'} py-3`}
                     >
                       {col.format ? col.format(row[col.key]) : row[col.key]}
                     </TableCell>
@@ -120,7 +120,7 @@ export default function TopCitiesTable({ rows }) {
               ))}
               {sortedRows.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={COLUMNS.length} className="text-center py-8 text-sm text-slate-400">
+                  <TableCell colSpan={COLUMNS.length} className="text-center py-8 text-sm text-muted-foreground">
                     No city data available yet.
                   </TableCell>
                 </TableRow>

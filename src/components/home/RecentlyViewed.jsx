@@ -62,20 +62,20 @@ export default function RecentlyViewed({ user, onFavorite, savedPropertyIds = []
   }
 
   return (
-    <div className="mt-12 pt-8 border-t border-slate-200">
+    <div className="mt-12 pt-8 border-t border-border">
       <div className="flex items-center gap-2 mb-6">
-        <Clock className="h-6 w-6 text-slate-500" />
-        <h2 className="text-2xl font-bold text-slate-900">
+        <Clock className="h-6 w-6 text-muted-foreground" />
+        <h2 className="text-2xl font-bold text-foreground">
           Recently Viewed
         </h2>
-        <p className="text-sm text-slate-600 ml-auto">
+        <p className="text-sm text-muted-foreground ml-auto">
           Properties you've recently browsed
         </p>
       </div>
 
       {loading ? (
         <div className="flex justify-center py-12">
-          <Loader2 className="h-8 w-8 animate-spin text-slate-600" />
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

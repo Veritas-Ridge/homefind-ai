@@ -36,10 +36,10 @@ export default function OnboardingTour({ steps, onComplete, onSkip }) {
     const element = document.querySelector(steps[currentStep].target);
     if (element) {
       element.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      element.classList.add('ring-4', 'ring-blue-500', 'ring-opacity-50', 'rounded-lg');
+      element.classList.add('ring-4', 'ring-ring', 'ring-opacity-50', 'rounded-lg');
       
       return () => {
-        element.classList.remove('ring-4', 'ring-blue-500', 'ring-opacity-50', 'rounded-lg');
+        element.classList.remove('ring-4', 'ring-ring', 'ring-opacity-50', 'rounded-lg');
       };
     }
   }, [currentStep, steps]);
@@ -58,12 +58,12 @@ export default function OnboardingTour({ steps, onComplete, onSkip }) {
           exit={{ opacity: 0, scale: 0.9 }}
           className="w-full max-w-lg"
         >
-          <Card className="shadow-2xl border-blue-500">
+          <Card className="shadow-2xl border-primary">
             <CardHeader className="pb-3">
               <div className="flex items-start justify-between">
                 <div className="flex-1">
                   <CardTitle className="text-xl mb-1">{step.title}</CardTitle>
-                  <p className="text-sm text-slate-600">
+                  <p className="text-sm text-muted-foreground">
                     Step {currentStep + 1} of {steps.length}
                   </p>
                 </div>
@@ -71,20 +71,20 @@ export default function OnboardingTour({ steps, onComplete, onSkip }) {
                   variant="ghost"
                   size="icon"
                   onClick={handleSkipTour}
-                  className="text-slate-400 hover:text-slate-600"
+                  className="text-muted-foreground hover:text-muted-foreground"
                 >
                   <X className="h-5 w-5" />
                 </Button>
               </div>
-              <div className="w-full bg-slate-200 h-2 rounded-full mt-3">
+              <div className="w-full bg-muted h-2 rounded-full mt-3">
                 <div
-                  className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                  className="bg-[var(--crandell-blue)] h-2 rounded-full transition-all duration-300"
                   style={{ width: `${progress}%` }}
                 />
               </div>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="text-slate-700">{step.content}</div>
+              <div className="text-muted-foreground">{step.content}</div>
 
               <div className="flex items-center justify-between pt-2">
                 <Button
@@ -99,7 +99,7 @@ export default function OnboardingTour({ steps, onComplete, onSkip }) {
 
                 <Button
                   onClick={handleNext}
-                  className="bg-blue-600 hover:bg-blue-700 gap-2"
+                  className="bg-[var(--crandell-blue)] hover:bg-[var(--crandell-blue-hover)] gap-2"
                 >
                   {currentStep === steps.length - 1 ? (
                     <>
@@ -117,7 +117,7 @@ export default function OnboardingTour({ steps, onComplete, onSkip }) {
 
               <button
                 onClick={handleSkipTour}
-                className="text-sm text-slate-500 hover:text-slate-700 w-full text-center"
+                className="text-sm text-muted-foreground hover:text-muted-foreground w-full text-center"
               >
                 Skip tour
               </button>

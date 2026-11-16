@@ -70,7 +70,7 @@ export default function PropertyCard({ property, onFavorite, isFavorited, onComp
       transition={{ duration: 0.3 }}
     >
       {showLoginGate && <LoginGateModal onClose={() => setShowLoginGate(false)} />}
-      <Card className={`overflow-hidden hover:shadow-xl transition-all duration-300 bg-white group ${isComparing ? 'ring-2 ring-primary' : 'border-border'}`}>
+      <Card className={`overflow-hidden hover:shadow-xl transition-all duration-300 bg-card group ${isComparing ? 'ring-2 ring-primary' : 'border-border'}`}>
         <Link to={createPageUrl('PropertyDetail') + `?id=${property.id}`}>
           <div
             onMouseEnter={() => preloadAhead(currentImageIndex)}
@@ -113,7 +113,7 @@ export default function PropertyCard({ property, onFavorite, isFavorited, onComp
                 </Badge>
               )}
               {property.virtual_tour_url && (
-                <Badge className="bg-indigo-600 text-white border-0 flex items-center gap-1">
+                <Badge className="bg-[var(--crandell-blue)] text-white border-0 flex items-center gap-1">
                   <Video className="h-3 w-3" /> 3D Tour
                 </Badge>
               )}
@@ -128,7 +128,7 @@ export default function PropertyCard({ property, onFavorite, isFavorited, onComp
                     e.preventDefault();
                     onCompare(property);
                   }}
-                  className={`h-9 px-3 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-white transition-all text-xs font-medium ${
+                  className={`h-9 px-3 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-card transition-all text-xs font-medium ${
                     isComparing ? 'bg-primary text-primary-foreground' : 'bg-white/90 text-muted-foreground'
                   }`}
                 >
@@ -141,7 +141,7 @@ export default function PropertyCard({ property, onFavorite, isFavorited, onComp
                   e.preventDefault();
                   onFavorite?.(property);
                 }}
-                className="h-9 w-9 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-white transition-all"
+                className="h-9 w-9 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-card transition-all"
               >
                 <Heart
                   className={`h-4 w-4 transition-colors ${

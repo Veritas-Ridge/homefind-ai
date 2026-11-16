@@ -26,7 +26,8 @@ import {
   Users, TrendingDown, Eye, Heart, Loader2,
   AlertCircle, CheckCircle, Clock, Sparkles, Link as LinkIcon, RefreshCw
 } from 'lucide-react';
-import { format } from 'date-fns';
+import { format, formatDistanceToNow } from 'date-fns';
+import { alertTypeLabel, URGENT_ALERT_TYPES } from '@/lib/alertTypes';
 import FollowUpBossContacts from '../components/admin/FollowUpBossContacts';
 import InviteUserAdmin from '../components/admin/InviteUserAdmin';
 import FollowUpBossFieldMapping from '../components/admin/FollowUpBossFieldMapping';
@@ -60,7 +61,7 @@ export default function AdminDashboard() {
     queryFn: async () => {
       const { data } = await supabase
         .from('engagement_alerts')
-        .select('*')
+        .select('*, fub_event:fub_events(status, sent_at, last_error, attempts)')
         .order('created_at', { ascending: false })
         .limit(100);
       return data || [];
@@ -159,7 +160,7 @@ export default function AdminDashboard() {
     new: { icon: AlertCircle, color: 'text-red-600', bg: 'bg-red-50', border: 'border-red-200' },
     acknowledged: { icon: Clock, color: 'text-yellow-600', bg: 'bg-yellow-50', border: 'border-yellow-200' },
     action_taken: { icon: CheckCircle, color: 'text-green-600', bg: 'bg-green-50', border: 'border-green-200' },
-    dismissed: { icon: CheckCircle, color: 'text-slate-400', bg: 'bg-slate-50', border: 'border-slate-200' }
+    dismissed: { icon: CheckCircle, color: 'text-muted-foreground', bg: 'bg-muted', border: 'border-border' }
   };
 
   // Calculate engagement stats
@@ -173,7 +174,7 @@ export default function AdminDashboard() {
   if (!user) {
     return (
       <div className="flex justify-center items-center min-h-screen">
-        <Loader2 className="h-8 w-8 animate-spin text-slate-600" />
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
       </div>
     );
   }
@@ -183,46 +184,46 @@ export default function AdminDashboard() {
       <div className="crandell-container">
         <div className="mb-8">
           <div className="flex items-center gap-2">
-            <h1 className="text-3xl md:text-4xl font-bold text-slate-900 mb-2">Admin Dashboard</h1>
+            <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-2">Admin Dashboard</h1>
             <InfoTooltip content="Track user activity, manage engagement alerts, and integrate with Follow Up Boss CRM" />
           </div>
-          <p className="text-slate-600">Monitor user engagement and manage follow-ups</p>
+          <p className="text-muted-foreground">Monitor user engagement and manage follow-ups</p>
         </div>
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-8">
-          <Card className="bg-white shadow-lg border-slate-200">
+          <Card className="bg-card shadow-lg border-border">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-slate-600 mb-1">Total Users</p>
-                  <p className="text-3xl font-bold text-slate-900">{allUsers.length}</p>
+                  <p className="text-sm text-muted-foreground mb-1">Total Users</p>
+                  <p className="text-3xl font-bold text-foreground">{allUsers.length}</p>
                 </div>
-                <Users className="h-10 w-10 text-slate-300" />
+                <Users className="h-10 w-10 text-muted-foreground/70" />
               </div>
             </CardContent>
           </Card>
 
-          <Card className="bg-white shadow-lg border-slate-200">
+          <Card className="bg-card shadow-lg border-border">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-slate-600 mb-1 flex items-center">
+                  <p className="text-sm text-muted-foreground mb-1 flex items-center">
                     Active Users
                     <InfoTooltip content="Users who have viewed at least one property" />
                   </p>
-                  <p className="text-3xl font-bold text-slate-900">{activeUsers}</p>
+                  <p className="text-3xl font-bold text-foreground">{activeUsers}</p>
                 </div>
                 <Eye className="h-10 w-10 text-green-300" />
               </div>
             </CardContent>
           </Card>
 
-          <Card className="bg-white shadow-lg border-slate-200">
+          <Card className="bg-card shadow-lg border-border">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-slate-600 mb-1 flex items-center">
+                  <p className="text-sm text-muted-foreground mb-1 flex items-center">
                     New Alerts
                     <InfoTooltip content="Engagement drop alerts that need attention" />
                   </p>
@@ -233,12 +234,12 @@ export default function AdminDashboard() {
             </CardContent>
           </Card>
 
-          <Card className="bg-white shadow-lg border-slate-200">
+          <Card className="bg-card shadow-lg border-border">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-slate-600 mb-1">Total Views</p>
-                  <p className="text-3xl font-bold text-slate-900">{allViews.length}</p>
+                  <p className="text-sm text-muted-foreground mb-1">Total Views</p>
+                  <p className="text-3xl font-bold text-foreground">{allViews.length}</p>
                 </div>
                 <TrendingDown className="h-10 w-10 text-amber-300" />
               </div>
@@ -248,21 +249,21 @@ export default function AdminDashboard() {
 
         {/* Main Content Tabs */}
         <Tabs defaultValue="analytics" className="space-y-6">
-          <TabsList className="bg-white border border-slate-200 flex-wrap h-auto gap-1">
-            <TabsTrigger value="analytics" className="data-[state=active]:bg-slate-100">
+          <TabsList className="bg-card border border-border flex-wrap h-auto gap-1">
+            <TabsTrigger value="analytics" className="data-[state=active]:bg-muted">
               Analytics
             </TabsTrigger>
-            <TabsTrigger value="alerts" className="data-[state=active]:bg-slate-100">
+            <TabsTrigger value="alerts" className="data-[state=active]:bg-muted">
               Engagement Alerts ({newAlerts})
             </TabsTrigger>
-            <TabsTrigger value="users" className="data-[state=active]:bg-slate-100">
+            <TabsTrigger value="users" className="data-[state=active]:bg-muted">
               User Activity
             </TabsTrigger>
-            <TabsTrigger value="crm" className="data-[state=active]:bg-slate-100">
+            <TabsTrigger value="crm" className="data-[state=active]:bg-muted">
               CRM Integration
             </TabsTrigger>
             {user?.role === 'admin' && (
-              <TabsTrigger value="idx-setup" className="data-[state=active]:bg-slate-100">
+              <TabsTrigger value="idx-setup" className="data-[state=active]:bg-muted">
                 MLS Setup
               </TabsTrigger>
             )}
@@ -279,22 +280,22 @@ export default function AdminDashboard() {
 
           {/* Alerts Tab */}
           <TabsContent value="alerts">
-          <Card className="shadow-lg border-slate-200">
+          <Card className="shadow-lg border-border">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                Engagement Drop Alerts
-                <InfoTooltip content="Automated alerts when user activity drops by 50% or more. Take action to re-engage users." />
+                Lead and Engagement Alerts
+                <InfoTooltip content="Tour requests and questions from buyers, plus alerts when a buyer's activity drops. Newest first." />
               </CardTitle>
             </CardHeader>
               <CardContent>
                 {alertsLoading ? (
                   <div className="flex justify-center py-12">
-                    <Loader2 className="h-8 w-8 animate-spin text-slate-600" />
+                    <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
                   </div>
                 ) : alerts.length === 0 ? (
                   <div className="text-center py-12">
                     <CheckCircle className="h-12 w-12 text-green-500 mx-auto mb-3" />
-                    <p className="text-slate-600">No alerts at this time. All users are engaged!</p>
+                    <p className="text-muted-foreground">No alerts at this time. All users are engaged!</p>
                   </div>
                 ) : (
                   <div className="space-y-4">
@@ -309,37 +310,66 @@ export default function AdminDashboard() {
                               <div className="flex items-start gap-3">
                                 <Icon className={`h-5 w-5 mt-1 ${config.color}`} />
                                 <div>
-                                  <h3 className="font-semibold text-slate-900">
+                                  <h3 className="font-semibold text-foreground">
                                     {alert.user_name || alert.user_email}
                                   </h3>
-                                  <p className="text-sm text-slate-600">{alert.user_email}</p>
+                                  <p className="text-sm text-muted-foreground">{alert.user_email}</p>
                                 </div>
                               </div>
-                              <Badge className={`${config.bg} ${config.color} border-0`}>
-                                {alert.status.replace('_', ' ')}
-                              </Badge>
+                              <div className="flex items-center gap-2 flex-wrap justify-end">
+                                <Badge className={`border-0 ${URGENT_ALERT_TYPES.has(alert.alert_type) ? 'bg-primary text-primary-foreground' : 'bg-muted text-foreground'}`}>
+                                  {alertTypeLabel(alert.alert_type)}
+                                </Badge>
+                                <Badge className={`${config.bg} ${config.color} border-0`}>
+                                  {alert.status.replace('_', ' ')}
+                                </Badge>
+                              </div>
                             </div>
 
                             <div className="ml-8 space-y-2">
-                              <div className="grid grid-cols-2 gap-4 text-sm">
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1 text-sm">
                                 <div>
-                                  <span className="text-slate-600">Engagement Drop:</span>
-                                  <span className="ml-2 font-semibold text-red-600">
-                                    {alert.drop_percentage}%
-                                  </span>
-                                </div>
-                                <div>
-                                  <span className="text-slate-600">Last Activity:</span>
+                                  <span className="text-muted-foreground">Received:</span>
                                   <span className="ml-2 font-semibold">
-                                    {alert.last_activity_date
-                                      ? format(new Date(alert.last_activity_date), 'MMM d, yyyy')
-                                      : 'N/A'}
+                                    {alert.created_at ? format(new Date(alert.created_at), 'MMM d, yyyy h:mm a') : 'Unknown'}
                                   </span>
                                 </div>
+                                <div>
+                                  <span className="text-muted-foreground">Last activity:</span>
+                                  <span className="ml-2 font-semibold">
+                                    {(alert.last_activity_date || alert.created_at)
+                                      ? `${formatDistanceToNow(new Date(alert.last_activity_date || alert.created_at), { addSuffix: true })}`
+                                      : 'Unknown'}
+                                  </span>
+                                </div>
+                                {alert.drop_percentage > 0 && (
+                                  <div>
+                                    <span className="text-muted-foreground">Engagement drop:</span>
+                                    <span className="ml-2 font-semibold text-red-600">{alert.drop_percentage}%</span>
+                                  </div>
+                                )}
+                                {alert.fub_event && (
+                                  <div>
+                                    <span className="text-muted-foreground">Follow Up Boss:</span>
+                                    <span className={`ml-2 font-semibold ${alert.fub_event.status === 'sent' ? 'text-green-700' : alert.fub_event.status === 'failed' ? 'text-red-600' : 'text-amber-700'}`}>
+                                      {alert.fub_event.status === 'sent'
+                                        ? `Delivered ${alert.fub_event.sent_at ? format(new Date(alert.fub_event.sent_at), 'MMM d, h:mm a') : ''}`
+                                        : alert.fub_event.status === 'pending' ? 'Queued for delivery'
+                                        : alert.fub_event.status === 'skipped' ? 'Not sent (team account)'
+                                        : `Failed${alert.fub_event.last_error ? `: ${alert.fub_event.last_error.slice(0, 80)}` : ''}`}
+                                    </span>
+                                  </div>
+                                )}
+                                {alert.notified_at && (
+                                  <div>
+                                    <span className="text-muted-foreground">Email to Tanner:</span>
+                                    <span className="ml-2 font-semibold text-green-700">{format(new Date(alert.notified_at), 'MMM d, h:mm a')}</span>
+                                  </div>
+                                )}
                               </div>
 
                               {alert.ai_summary && (
-                                <div className="bg-white/50 rounded-lg p-3 text-sm text-slate-700">
+                                <div className="bg-white/50 rounded-lg p-3 text-sm text-muted-foreground">
                                   <div className="flex items-start gap-2">
                                     <Sparkles className="h-4 w-4 text-amber-600 mt-0.5 flex-shrink-0" />
                                     <p>{alert.ai_summary}</p>
@@ -348,9 +378,9 @@ export default function AdminDashboard() {
                               )}
 
                               {alert.recommended_action && (
-                                <div className="bg-blue-50 rounded-lg p-3 text-sm">
-                                  <p className="font-medium text-blue-900 mb-1">Recommended Action:</p>
-                                  <p className="text-blue-800">{alert.recommended_action}</p>
+                                <div className="bg-primary/10 rounded-lg p-3 text-sm">
+                                  <p className="font-medium text-primary mb-1">Recommended Action:</p>
+                                  <p className="text-primary">{alert.recommended_action}</p>
                                 </div>
                               )}
 
@@ -364,17 +394,20 @@ export default function AdminDashboard() {
                                     >
                                       Acknowledge
                                     </Button>
-                                    <Button
-                                     size="sm"
-                                     className="bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-1"
-                                     onClick={() => syncToFollowUpBoss(alert.id)}
-                                    >
-                                     Sync to Follow Up Boss
-                                     <InfoTooltip content="Create a task in Follow Up Boss CRM for this alert" />
-                                    </Button>
+                                    {alert.fub_event?.status !== 'sent' && alert.fub_event?.status !== 'pending' && (
+                                      <Button
+                                       size="sm"
+                                       variant="brand"
+                                       className="flex items-center gap-1"
+                                       onClick={() => syncToFollowUpBoss(alert.id)}
+                                      >
+                                       Sync to Follow Up Boss
+                                       <InfoTooltip content="Create a task in Follow Up Boss CRM for this alert" />
+                                      </Button>
+                                    )}
                                     <Button
                                       size="sm"
-                                      className="bg-slate-800 hover:bg-slate-700"
+                                      className="bg-secondary hover:bg-[var(--crandell-ink-hover)]"
                                       onClick={() => updateAlertStatus(alert.id, 'action_taken')}
                                     >
                                       Mark as Handled
@@ -394,7 +427,7 @@ export default function AdminDashboard() {
                                   size="sm"
                                   variant="ghost"
                                   onClick={() => updateAlertStatus(alert.id, 'dismissed')}
-                                  className="text-slate-600"
+                                  className="text-muted-foreground"
                                 >
                                   Dismiss
                                 </Button>
@@ -412,7 +445,7 @@ export default function AdminDashboard() {
 
           {/* Users Tab */}
           <TabsContent value="users">
-          <Card className="shadow-lg border-slate-200">
+          <Card className="shadow-lg border-border">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 User Engagement Overview
@@ -440,13 +473,13 @@ export default function AdminDashboard() {
                         <TableRow key={u.id}>
                           <TableCell>
                             <div>
-                              <p className="font-medium text-slate-900">{u.full_name || 'Unknown'}</p>
-                              <p className="text-sm text-slate-500">{u.email}</p>
+                              <p className="font-medium text-foreground">{u.full_name || 'Unknown'}</p>
+                              <p className="text-sm text-muted-foreground">{u.email}</p>
                             </div>
                           </TableCell>
                           <TableCell>
                             <div className="flex items-center gap-2">
-                              <Eye className="h-4 w-4 text-slate-400" />
+                              <Eye className="h-4 w-4 text-muted-foreground" />
                               <span className="font-medium">{userViews.length}</span>
                             </div>
                           </TableCell>
@@ -464,7 +497,7 @@ export default function AdminDashboard() {
                               <div className="flex items-start gap-2 max-w-sm">
                                 <Sparkles className="h-4 w-4 text-primary flex-shrink-0 mt-1" />
                                 <div className="flex-1 min-w-0">
-                                  <p className="text-sm text-slate-700 line-clamp-2">
+                                  <p className="text-sm text-muted-foreground line-clamp-2">
                                     {u.ai_summary}
                                   </p>
                                   <div className="flex items-center gap-3 mt-1">
@@ -476,7 +509,7 @@ export default function AdminDashboard() {
                                       View full
                                     </button>
                                     {u.ai_summary_generated_at && (
-                                      <span className="text-xs text-slate-400">
+                                      <span className="text-xs text-muted-foreground">
                                         {format(new Date(u.ai_summary_generated_at), 'MMM d, yyyy')}
                                       </span>
                                     )}
@@ -522,7 +555,7 @@ export default function AdminDashboard() {
           {/* MLS Setup Tab (Admin Only) */}
           {user?.role === 'admin' && (
             <TabsContent value="idx-setup" className="space-y-6">
-              <Card className="shadow-lg border-slate-200">
+              <Card className="shadow-lg border-border">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <CheckCircle className="h-5 w-5 text-green-600" />
@@ -539,19 +572,19 @@ export default function AdminDashboard() {
                 </CardContent>
               </Card>
 
-              <Card className="shadow-lg border-slate-200">
+              <Card className="shadow-lg border-border">
                 <CardHeader>
                   <CardTitle>Spark API Setup</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <Alert className="bg-blue-50 border-blue-200">
-                    <AlertCircle className="h-4 w-4 text-blue-600" />
-                    <AlertDescription className="text-blue-800">
+                  <Alert className="bg-primary/10 border-primary/30">
+                    <AlertCircle className="h-4 w-4 text-primary" />
+                    <AlertDescription className="text-primary">
                       <strong>Spark API</strong> provides direct access to Flexmls MLS listings with real-time updates.
                     </AlertDescription>
                   </Alert>
 
-                  <div className="space-y-3 text-sm text-slate-700">
+                  <div className="space-y-3 text-sm text-muted-foreground">
                     <p className="font-semibold">About Spark API:</p>
                     <ul className="list-disc ml-5 space-y-2">
                       <li>Access to active MLS listings with detailed property information</li>
@@ -560,7 +593,7 @@ export default function AdminDashboard() {
                       <li>Non-expiring access tokens for reliable integration</li>
                     </ul>
 
-                    <div className="mt-4 p-4 bg-slate-50 rounded-lg">
+                    <div className="mt-4 p-4 bg-muted rounded-lg">
                       <p className="font-semibold mb-2">Already Configured:</p>
                       <ul className="space-y-1 text-xs">
                         <li>✓ API Key (OAuth Key)</li>
@@ -572,25 +605,25 @@ export default function AdminDashboard() {
                     <Alert className="bg-amber-50 border-amber-200 mt-4">
                       <AlertCircle className="h-4 w-4 text-amber-600" />
                       <AlertDescription className="text-amber-800">
-                        <strong>Note:</strong> Visit <a href="https://sparkplatform.com/appstore/admin" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">Spark Platform</a> to manage your API access or regenerate tokens.
+                        <strong>Note:</strong> Visit <a href="https://sparkplatform.com/appstore/admin" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Spark Platform</a> to manage your API access or regenerate tokens.
                       </AlertDescription>
                     </Alert>
                   </div>
                 </CardContent>
               </Card>
 
-              <Card className="shadow-lg border-slate-200">
+              <Card className="shadow-lg border-border">
                 <CardHeader>
                   <CardTitle>Test API Connection</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <p className="text-sm text-slate-600">
+                  <p className="text-sm text-muted-foreground">
                     Test the connection to Spark API to verify your credentials and endpoint access.
                   </p>
                   <Button
                     onClick={testConnection}
                     disabled={testing}
-                    className="bg-slate-800 hover:bg-slate-700"
+                    className="bg-secondary hover:bg-[var(--crandell-ink-hover)]"
                   >
                     {testing ? (
                       <>
@@ -607,25 +640,25 @@ export default function AdminDashboard() {
 
                   {testResults && (
                     <div className="mt-4">
-                      <h4 className="font-semibold mb-2 text-slate-900">Test Results:</h4>
+                      <h4 className="font-semibold mb-2 text-foreground">Test Results:</h4>
                       <Textarea
                         value={JSON.stringify(testResults, null, 2)}
                         readOnly
-                        className="h-64 font-mono text-xs bg-slate-50"
+                        className="h-64 font-mono text-xs bg-muted"
                       />
                     </div>
                   )}
                 </CardContent>
               </Card>
 
-              <Card className="shadow-lg border-slate-200">
+              <Card className="shadow-lg border-border">
                 <CardHeader>
                   <CardTitle>Sync MLS Listings</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <Alert className="bg-blue-50 border-blue-200">
-                    <AlertCircle className="h-4 w-4 text-blue-600" />
-                    <AlertDescription className="text-blue-800">
+                  <Alert className="bg-primary/10 border-primary/30">
+                    <AlertCircle className="h-4 w-4 text-primary" />
+                    <AlertDescription className="text-primary">
                       Import active MLS listings from Spark API into your database. Each run processes ~200 listings using price-bucketed pagination to scale beyond 5,000+ properties. Runs automatically every 20 minutes.
                     </AlertDescription>
                   </Alert>
@@ -650,7 +683,7 @@ export default function AdminDashboard() {
 
                   {syncResults && (
                     <div className="mt-4">
-                      <h4 className="font-semibold mb-2 text-slate-900">Sync Results:</h4>
+                      <h4 className="font-semibold mb-2 text-foreground">Sync Results:</h4>
                       {syncResults.success ? (
                         <Alert className="bg-green-50 border-green-200">
                           <CheckCircle className="h-4 w-4 text-green-600" />
@@ -670,7 +703,7 @@ export default function AdminDashboard() {
                       <Textarea
                         value={JSON.stringify(syncResults, null, 2)}
                         readOnly
-                        className="h-40 font-mono text-xs bg-slate-50 mt-3"
+                        className="h-40 font-mono text-xs bg-muted mt-3"
                       />
                     </div>
                   )}
@@ -696,7 +729,7 @@ export default function AdminDashboard() {
             )}
           </DialogHeader>
           <div className="py-4">
-            <p className="text-sm text-slate-700 whitespace-pre-wrap leading-relaxed">
+            <p className="text-sm text-muted-foreground whitespace-pre-wrap leading-relaxed">
               {viewingSummaryUser?.ai_summary}
             </p>
           </div>

@@ -39,7 +39,7 @@ import PriceBandChart from '@/components/market-pulse/PriceBandChart';
  */
 
 // Tokens matching AnalyticsDashboard for visual cohesion
-const BRAND = '#00AFE5';
+const BRAND = '#4F90B5';
 
 export default function MarketPulse() {
   const { user } = useAuth();
@@ -283,25 +283,25 @@ export default function MarketPulse() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen bg-muted">
       {/* Page header */}
-      <div className="border-b border-slate-200 bg-white">
+      <div className="border-b border-border bg-card">
         <div className="crandell-container py-6">
           <div className="flex items-center justify-between">
             <div>
               <div className="flex items-center gap-3">
-                <div className="p-2 rounded-lg bg-[#00AFE5]/10">
-                  <TrendingUp className="h-6 w-6 text-[#00AFE5]" />
+                <div className="p-2 rounded-lg bg-[#4F90B5]/10">
+                  <TrendingUp className="h-6 w-6 text-[#4F90B5]" />
                 </div>
                 <div>
-                  <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Market Pulse</h1>
-                  <p className="text-sm text-slate-500 mt-0.5">
+                  <h1 className="text-3xl font-bold text-foreground tracking-tight">Market Pulse</h1>
+                  <p className="text-sm text-muted-foreground mt-0.5">
                     Live residential market intelligence for the Crandell Real Estate Team · {format(new Date(), 'MMMM d, yyyy')}
                   </p>
                 </div>
               </div>
             </div>
-            <div className="hidden md:flex items-center gap-2 text-xs text-slate-400">
+            <div className="hidden md:flex items-center gap-2 text-xs text-muted-foreground">
               <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
               Data refreshed every 5 minutes
             </div>
@@ -325,8 +325,8 @@ export default function MarketPulse() {
         {isLoading && !hasError && (
           <div className="flex items-center justify-center py-24">
             <div className="text-center space-y-3">
-              <Loader2 className="h-8 w-8 text-[#00AFE5] animate-spin mx-auto" />
-              <p className="text-sm text-slate-500">Loading market data…</p>
+              <Loader2 className="h-8 w-8 text-[#4F90B5] animate-spin mx-auto" />
+              <p className="text-sm text-muted-foreground">Loading market data…</p>
             </div>
           </div>
         )}

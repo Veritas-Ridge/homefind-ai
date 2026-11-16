@@ -41,27 +41,27 @@ class ErrorBoundary extends React.Component {
   render() {
     if (this.state.hasError) {
       return (
-        <div className="min-h-screen flex items-center justify-center bg-slate-50 p-6">
+        <div className="min-h-screen flex items-center justify-center bg-muted p-6">
           <div className="max-w-md w-full text-center space-y-4">
-            <h1 className="text-2xl font-bold text-slate-800">Something went wrong</h1>
-            <p className="text-slate-600">
+            <h1 className="text-2xl font-bold text-foreground">Something went wrong</h1>
+            <p className="text-muted-foreground">
               {this.state.error?.message || 'An unexpected error occurred.'}
             </p>
             <div className="flex gap-3 justify-center pt-4">
               <button
                 onClick={() => { this.setState({ hasError: false, error: null }); }}
-                className="px-4 py-2 text-sm font-medium text-white bg-slate-800 rounded-lg hover:bg-slate-700"
+                className="px-4 py-2 text-sm font-medium text-white bg-secondary rounded-lg hover:bg-secondary"
               >
                 Try Again
               </button>
               <button
                 onClick={() => { window.location.href = '/'; }}
-                className="px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-200 rounded-lg hover:bg-slate-50"
+                className="px-4 py-2 text-sm font-medium text-muted-foreground bg-card border border-border rounded-lg hover:bg-muted"
               >
                 Go Home
               </button>
             </div>
-            <details className="text-left mt-6 p-3 bg-slate-100 rounded text-xs text-slate-500">
+            <details className="text-left mt-6 p-3 bg-muted rounded text-xs text-muted-foreground">
               <summary className="cursor-pointer font-medium">Error details</summary>
               <pre className="mt-2 whitespace-pre-wrap break-words">{this.state.error?.stack}</pre>
             </details>
@@ -79,10 +79,10 @@ function AuthLoadingGate({ children }) {
 
   if (isLoadingAuth) {
     return (
-      <div className="fixed inset-0 flex items-center justify-center bg-white">
+      <div className="fixed inset-0 flex items-center justify-center bg-card">
         <div className="text-center space-y-3">
-          <div className="w-8 h-8 border-4 border-slate-200 border-t-slate-800 rounded-full animate-spin mx-auto"></div>
-          <p className="text-sm text-slate-400">Loading...</p>
+          <div className="w-8 h-8 border-4 border-border border-t-slate-800 rounded-full animate-spin mx-auto"></div>
+          <p className="text-sm text-muted-foreground">Loading...</p>
         </div>
       </div>
     );

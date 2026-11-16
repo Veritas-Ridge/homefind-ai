@@ -71,7 +71,7 @@ export default function Profile() {
   };
 
   if (isLoadingAuth) {
-    return <div className="flex justify-center items-center min-h-screen"><Loader2 className="h-8 w-8 animate-spin text-slate-600" /></div>;
+    return <div className="flex justify-center items-center min-h-screen"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>;
   }
 
   if (!isAuthenticated) {
@@ -81,11 +81,11 @@ export default function Profile() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 py-12">
       <div className="max-w-4xl mx-auto px-[var(--crandell-page-padding)]">
-        <h1 className="text-3xl font-bold text-slate-900 mb-8">My Profile</h1>
+        <h1 className="text-3xl font-bold text-foreground mb-8">My Profile</h1>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="md:col-span-2 space-y-6">
-            <Card className="shadow-lg border-slate-200">
+            <Card className="shadow-lg border-border">
               <CardHeader><CardTitle>Account Information</CardTitle></CardHeader>
               <CardContent className="space-y-6">
                 <div className="space-y-2">
@@ -95,18 +95,18 @@ export default function Profile() {
                 <div className="space-y-2">
                   <Label htmlFor="email">Email</Label>
                   <div className="flex items-center gap-2">
-                    <Mail className="h-4 w-4 text-slate-400" />
-                    <Input id="email" value={user?.email || ''} disabled className="bg-slate-50" />
+                    <Mail className="h-4 w-4 text-muted-foreground" />
+                    <Input id="email" value={user?.email || ''} disabled className="bg-muted" />
                   </div>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="role">Role</Label>
                   <div className="flex items-center gap-2">
-                    <Shield className="h-4 w-4 text-slate-400" />
-                    <Input id="role" value={user?.role || ''} disabled className="bg-slate-50 capitalize" />
+                    <Shield className="h-4 w-4 text-muted-foreground" />
+                    <Input id="role" value={user?.role || ''} disabled className="bg-muted capitalize" />
                   </div>
                 </div>
-                <Button onClick={handleSave} disabled={saving} className="bg-slate-800 hover:bg-slate-700 select-none">
+                <Button onClick={handleSave} disabled={saving} className="bg-secondary hover:bg-[var(--crandell-ink-hover)] select-none">
                   {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null} Save Changes
                 </Button>
               </CardContent>
@@ -115,7 +115,7 @@ export default function Profile() {
             <Card className="shadow-lg border-red-200">
               <CardHeader><CardTitle className="text-red-600">Delete Account</CardTitle></CardHeader>
               <CardContent className="space-y-4">
-                <p className="text-sm text-slate-600">Permanently delete your account and all associated data. This action cannot be undone.</p>
+                <p className="text-sm text-muted-foreground">Permanently delete your account and all associated data. This action cannot be undone.</p>
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
                     <Button variant="destructive" disabled={deleting} className="select-none"><Trash2 className="h-4 w-4 mr-2" /> Delete My Account</Button>
@@ -138,26 +138,26 @@ export default function Profile() {
           </div>
 
           <div className="space-y-6">
-            <Card className="shadow-lg border-slate-200">
+            <Card className="shadow-lg border-border">
               <CardHeader><CardTitle className="text-lg">Your Activity</CardTitle></CardHeader>
               <CardContent className="space-y-4">
                 {stats ? (
                   <>
-                    <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
-                      <div className="flex items-center gap-3"><Eye className="h-5 w-5 text-slate-600" /><span className="text-sm text-slate-700">Total Views</span></div>
-                      <span className="font-bold text-slate-900">{stats.totalViews}</span>
+                    <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
+                      <div className="flex items-center gap-3"><Eye className="h-5 w-5 text-muted-foreground" /><span className="text-sm text-muted-foreground">Total Views</span></div>
+                      <span className="font-bold text-foreground">{stats.totalViews}</span>
                     </div>
-                    <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
-                      <div className="flex items-center gap-3"><Heart className="h-5 w-5 text-red-500" /><span className="text-sm text-slate-700">Saved Homes</span></div>
-                      <span className="font-bold text-slate-900">{stats.savedProperties}</span>
+                    <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
+                      <div className="flex items-center gap-3"><Heart className="h-5 w-5 text-red-500" /><span className="text-sm text-muted-foreground">Saved Homes</span></div>
+                      <span className="font-bold text-foreground">{stats.savedProperties}</span>
                     </div>
-                    <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
-                      <div className="flex items-center gap-3"><MessageCircle className="h-5 w-5 text-slate-600" /><span className="text-sm text-slate-700">AI Chats</span></div>
-                      <span className="font-bold text-slate-900">{stats.chatMessages}</span>
+                    <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
+                      <div className="flex items-center gap-3"><MessageCircle className="h-5 w-5 text-muted-foreground" /><span className="text-sm text-muted-foreground">AI Chats</span></div>
+                      <span className="font-bold text-foreground">{stats.chatMessages}</span>
                     </div>
                   </>
                 ) : (
-                  <Loader2 className="h-6 w-6 animate-spin text-slate-600 mx-auto" />
+                  <Loader2 className="h-6 w-6 animate-spin text-muted-foreground mx-auto" />
                 )}
               </CardContent>
             </Card>

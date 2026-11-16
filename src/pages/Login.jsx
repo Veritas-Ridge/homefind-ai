@@ -6,7 +6,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent } from '@/components/ui/card';
-import { Loader2, Mail, Lock, ArrowRight, Home } from 'lucide-react';
+import { Loader2, Mail, Lock, ArrowRight } from 'lucide-react';
+import BrandLogo from '@/components/BrandLogo';
 
 export default function Login() {
   const { isAuthenticated, isLoadingAuth } = useAuth();
@@ -86,13 +87,13 @@ export default function Login() {
   if (isLoadingAuth) {
     return (
       <div className="fixed inset-0 flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-slate-600" />
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-card">
       {/* Hero Background */}
       <div className="relative min-h-screen flex items-center justify-center">
         <div
@@ -101,27 +102,27 @@ export default function Login() {
             backgroundImage: 'url(https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=1920&q=80)',
           }}
         >
-          <div className="absolute inset-0 bg-black/50"></div>
+          <div className="absolute inset-0 bg-[rgba(18,16,13,0.6)]"></div>
         </div>
 
         <div className="relative z-10 w-full max-w-md mx-auto px-4">
           {/* Logo / Title */}
           <div className="text-center mb-8">
-            <div className="flex items-center justify-center gap-2 mb-4">
-              <Home className="h-8 w-8 text-white" />
-              <h1 className="text-3xl font-bold text-white">Crandell Home Intelligence</h1>
-            </div>
-            <p className="text-white/80">Your AI-powered home search platform</p>
+            <a href="/" className="inline-flex justify-center mb-4" aria-label="Crandell Real Estate Team home">
+              <BrandLogo tone="light" />
+            </a>
+            <h1 className="text-white text-3xl mb-2">Save homes, get alerts, book tours</h1>
+            <p className="text-white/85">Browsing is always free. Sign in when you're ready to act.</p>
           </div>
 
           <Card className="shadow-2xl border-0">
             <CardContent className="p-6">
               {/* Tab Switcher */}
-              <div className="flex gap-1 mb-6 bg-slate-100 p-1 rounded-lg">
+              <div className="flex gap-1 mb-6 bg-muted p-1 rounded-lg">
                 <button
                   onClick={() => { setMode('login'); setError(''); setMessage(''); }}
                   className={`flex-1 py-2 text-sm font-medium rounded-md transition-colors ${
-                    mode === 'login' ? 'bg-white shadow text-slate-900' : 'text-slate-600 hover:text-slate-900'
+                    mode === 'login' ? 'bg-card shadow text-foreground' : 'text-muted-foreground hover:text-foreground'
                   }`}
                 >
                   Sign In
@@ -129,7 +130,7 @@ export default function Login() {
                 <button
                   onClick={() => { setMode('signup'); setError(''); setMessage(''); }}
                   className={`flex-1 py-2 text-sm font-medium rounded-md transition-colors ${
-                    mode === 'signup' ? 'bg-white shadow text-slate-900' : 'text-slate-600 hover:text-slate-900'
+                    mode === 'signup' ? 'bg-card shadow text-foreground' : 'text-muted-foreground hover:text-foreground'
                   }`}
                 >
                   Sign Up
@@ -137,7 +138,7 @@ export default function Login() {
                 <button
                   onClick={() => { setMode('magic'); setError(''); setMessage(''); }}
                   className={`flex-1 py-2 text-sm font-medium rounded-md transition-colors ${
-                    mode === 'magic' ? 'bg-white shadow text-slate-900' : 'text-slate-600 hover:text-slate-900'
+                    mode === 'magic' ? 'bg-card shadow text-foreground' : 'text-muted-foreground hover:text-foreground'
                   }`}
                 >
                   Magic Link
@@ -160,9 +161,9 @@ export default function Login() {
               {mode === 'login' && (
                 <form onSubmit={handleEmailLogin} className="space-y-4">
                   <div>
-                    <Label htmlFor="email" className="text-slate-700">Email</Label>
+                    <Label htmlFor="email" className="text-muted-foreground">Email</Label>
                     <div className="relative mt-1">
-                      <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                      <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                       <Input
                         id="email"
                         type="email"
@@ -175,9 +176,9 @@ export default function Login() {
                     </div>
                   </div>
                   <div>
-                    <Label htmlFor="password" className="text-slate-700">Password</Label>
+                    <Label htmlFor="password" className="text-muted-foreground">Password</Label>
                     <div className="relative mt-1">
-                      <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                      <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                       <Input
                         id="password"
                         type="password"
@@ -192,7 +193,8 @@ export default function Login() {
                   <Button
                     type="submit"
                     disabled={loading}
-                    className="w-full bg-primary hover:bg-[var(--crandell-primary-hover)] text-primary-foreground font-semibold py-5"
+                    variant="brandBlue"
+                    className="w-full py-5"
                   >
                     {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : (
                       <span className="flex items-center gap-2">Sign In <ArrowRight className="h-4 w-4" /></span>
@@ -205,7 +207,7 @@ export default function Login() {
               {mode === 'signup' && (
                 <form onSubmit={handleSignUp} className="space-y-4">
                   <div>
-                    <Label htmlFor="fullName" className="text-slate-700">Full Name</Label>
+                    <Label htmlFor="fullName" className="text-muted-foreground">Full Name</Label>
                     <Input
                       id="fullName"
                       type="text"
@@ -217,9 +219,9 @@ export default function Login() {
                     />
                   </div>
                   <div>
-                    <Label htmlFor="signupEmail" className="text-slate-700">Email</Label>
+                    <Label htmlFor="signupEmail" className="text-muted-foreground">Email</Label>
                     <div className="relative mt-1">
-                      <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                      <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                       <Input
                         id="signupEmail"
                         type="email"
@@ -232,9 +234,9 @@ export default function Login() {
                     </div>
                   </div>
                   <div>
-                    <Label htmlFor="signupPassword" className="text-slate-700">Password</Label>
+                    <Label htmlFor="signupPassword" className="text-muted-foreground">Password</Label>
                     <div className="relative mt-1">
-                      <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                      <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                       <Input
                         id="signupPassword"
                         type="password"
@@ -250,7 +252,8 @@ export default function Login() {
                   <Button
                     type="submit"
                     disabled={loading}
-                    className="w-full bg-primary hover:bg-[var(--crandell-primary-hover)] text-primary-foreground font-semibold py-5"
+                    variant="brandBlue"
+                    className="w-full py-5"
                   >
                     {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : (
                       <span className="flex items-center gap-2">Create Account <ArrowRight className="h-4 w-4" /></span>
@@ -262,13 +265,13 @@ export default function Login() {
               {/* Magic Link Form */}
               {mode === 'magic' && (
                 <form onSubmit={handleMagicLink} className="space-y-4">
-                  <p className="text-sm text-slate-600 mb-2">
+                  <p className="text-sm text-muted-foreground mb-2">
                     We'll send you a link to sign in instantly — no password needed.
                   </p>
                   <div>
-                    <Label htmlFor="magicEmail" className="text-slate-700">Email</Label>
+                    <Label htmlFor="magicEmail" className="text-muted-foreground">Email</Label>
                     <div className="relative mt-1">
-                      <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                      <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                       <Input
                         id="magicEmail"
                         type="email"
@@ -283,7 +286,8 @@ export default function Login() {
                   <Button
                     type="submit"
                     disabled={loading}
-                    className="w-full bg-primary hover:bg-[var(--crandell-primary-hover)] text-primary-foreground font-semibold py-5"
+                    variant="brandBlue"
+                    className="w-full py-5"
                   >
                     {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : (
                       <span className="flex items-center gap-2">Send Magic Link <Mail className="h-4 w-4" /></span>
@@ -295,7 +299,7 @@ export default function Login() {
           </Card>
 
           <p className="text-center text-white/60 text-sm mt-6">
-            &copy; {new Date().getFullYear()} Crandell Real Estate Team &mdash; Balboa Realty
+            &copy; {new Date().getFullYear()} Crandell Real Estate Team | Balboa Realty
           </p>
         </div>
       </div>

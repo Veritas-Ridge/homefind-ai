@@ -38,7 +38,7 @@ export default function InviteUserAdmin() {
   };
 
   return (
-    <Card className="shadow-lg border-slate-200">
+    <Card className="shadow-lg border-border">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <UserPlus className="h-5 w-5" />
@@ -86,7 +86,7 @@ export default function InviteUserAdmin() {
           <Button
             type="submit"
             disabled={inviting}
-            className="w-full bg-slate-800 hover:bg-slate-700 text-white"
+            className="w-full bg-secondary hover:bg-[var(--crandell-ink-hover)] text-white"
           >
             {inviting ? (
               <>

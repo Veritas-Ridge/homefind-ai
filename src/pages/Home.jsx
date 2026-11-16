@@ -199,7 +199,7 @@ export default function Home() {
 
               <form
                 onSubmit={handleHeroSearch}
-                className="bg-white rounded-lg shadow-2xl p-2 flex items-center gap-2 max-w-xl"
+                className="bg-card rounded-lg shadow-2xl p-2 flex items-center gap-2 max-w-xl"
               >
                 <Search className="w-5 h-5 text-muted-foreground ml-3 flex-shrink-0" />
                 <input
@@ -270,7 +270,7 @@ export default function Home() {
       {/* ================================================================
           TRUST STRIP — the main site's proof points, in one line
           ================================================================ */}
-      <section className="bg-white border-b border-border">
+      <section className="bg-card border-b border-border">
         <div className="crandell-container py-4 md:py-5">
           <ul className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-6 gap-y-3 text-sm">
             <li className="flex items-center gap-2 text-foreground">
@@ -304,7 +304,7 @@ export default function Home() {
       {/* ================================================================
           NOT SURE WHERE TO START? — three equal cards
           ================================================================ */}
-      <section className="bg-white py-12 md:py-16 border-b border-border">
+      <section className="bg-card py-12 md:py-16 border-b border-border">
         <div className="crandell-container">
           <h2 className="text-center text-foreground font-normal mb-8 text-2xl md:text-3xl">
             Not sure where to start?

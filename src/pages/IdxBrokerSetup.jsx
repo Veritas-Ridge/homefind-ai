@@ -54,7 +54,7 @@ export default function IdxBrokerSetup() {
   if (!user || user.role !== 'admin') {
     return (
       <div className="flex justify-center items-center min-h-screen">
-        <Loader2 className="h-8 w-8 animate-spin text-slate-600" />
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
       </div>
     );
   }
@@ -63,12 +63,12 @@ export default function IdxBrokerSetup() {
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 py-8">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-slate-900 mb-2">IDX Broker Setup</h1>
-          <p className="text-slate-600">Configure and test your IDX Broker MLS integration</p>
+          <h1 className="text-3xl font-bold text-foreground mb-2">IDX Broker Setup</h1>
+          <p className="text-muted-foreground">Configure and test your IDX Broker MLS integration</p>
         </div>
 
         {/* Configuration Status */}
-        <Card className="mb-6 shadow-lg border-slate-200">
+        <Card className="mb-6 shadow-lg border-border">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <CheckCircle className="h-5 w-5 text-green-600" />
@@ -86,29 +86,29 @@ export default function IdxBrokerSetup() {
         </Card>
 
         {/* IDX Broker Setup Instructions */}
-        <Card className="mb-6 shadow-lg border-slate-200">
+        <Card className="mb-6 shadow-lg border-border">
           <CardHeader>
             <CardTitle>IDX Broker Account Setup Required</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <Alert className="bg-blue-50 border-blue-200">
-              <AlertCircle className="h-4 w-4 text-blue-600" />
-              <AlertDescription className="text-blue-800">
+            <Alert className="bg-primary/10 border-primary/30">
+              <AlertCircle className="h-4 w-4 text-primary" />
+              <AlertDescription className="text-primary">
                 <strong>Important:</strong> Your IDX Broker account needs to be properly configured for API access.
               </AlertDescription>
             </Alert>
 
-            <div className="space-y-3 text-sm text-slate-700">
+            <div className="space-y-3 text-sm text-muted-foreground">
               <p className="font-semibold">Next Steps:</p>
               <ol className="list-decimal ml-5 space-y-2">
-                <li>Log into your IDX Broker account at <a href="https://middleware.idxbroker.com" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">middleware.idxbroker.com</a></li>
+                <li>Log into your IDX Broker account at <a href="https://middleware.idxbroker.com" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">middleware.idxbroker.com</a></li>
                 <li>Navigate to <strong>Clients → API</strong> or <strong>Settings → API Access</strong></li>
                 <li>Ensure your API key (starting with QTuG8F...) is activated</li>
                 <li>Verify that your account has access to featured listings</li>
                 <li>Check that the correct MLS feeds are enabled in your account</li>
               </ol>
 
-              <div className="mt-4 p-4 bg-slate-50 rounded-lg">
+              <div className="mt-4 p-4 bg-muted rounded-lg">
                 <p className="font-semibold mb-2">Common IDX Broker API Endpoints:</p>
                 <ul className="space-y-1 text-xs font-mono">
                   <li>• GET /clients/featured - Featured listings</li>
@@ -129,18 +129,18 @@ export default function IdxBrokerSetup() {
         </Card>
 
         {/* Test Connection */}
-        <Card className="mb-6 shadow-lg border-slate-200">
+        <Card className="mb-6 shadow-lg border-border">
           <CardHeader>
             <CardTitle>Test API Connection</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <p className="text-sm text-slate-600">
+            <p className="text-sm text-muted-foreground">
               Test the connection to IDX Broker to verify your API key and endpoint access.
             </p>
             <Button
               onClick={testConnection}
               disabled={testing}
-              className="bg-slate-800 hover:bg-slate-700"
+              className="bg-secondary hover:bg-[var(--crandell-ink-hover)]"
             >
               {testing ? (
                 <>
@@ -157,11 +157,11 @@ export default function IdxBrokerSetup() {
 
             {testResults && (
               <div className="mt-4">
-                <h4 className="font-semibold mb-2 text-slate-900">Test Results:</h4>
+                <h4 className="font-semibold mb-2 text-foreground">Test Results:</h4>
                 <Textarea
                   value={JSON.stringify(testResults, null, 2)}
                   readOnly
-                  className="h-64 font-mono text-xs bg-slate-50"
+                  className="h-64 font-mono text-xs bg-muted"
                 />
               </div>
             )}
@@ -169,14 +169,14 @@ export default function IdxBrokerSetup() {
         </Card>
 
         {/* Sync Listings */}
-        <Card className="shadow-lg border-slate-200">
+        <Card className="shadow-lg border-border">
           <CardHeader>
             <CardTitle>Sync MLS Listings</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <Alert className="bg-blue-50 border-blue-200">
-              <AlertCircle className="h-4 w-4 text-blue-600" />
-              <AlertDescription className="text-blue-800">
+            <Alert className="bg-primary/10 border-primary/30">
+              <AlertCircle className="h-4 w-4 text-primary" />
+              <AlertDescription className="text-primary">
                 Once your IDX Broker account is properly configured, use this button to import MLS listings into your app.
               </AlertDescription>
             </Alert>
@@ -201,7 +201,7 @@ export default function IdxBrokerSetup() {
 
             {syncResults && (
               <div className="mt-4">
-                <h4 className="font-semibold mb-2 text-slate-900">Sync Results:</h4>
+                <h4 className="font-semibold mb-2 text-foreground">Sync Results:</h4>
                 {syncResults.success ? (
                   <Alert className="bg-green-50 border-green-200">
                     <CheckCircle className="h-4 w-4 text-green-600" />
@@ -221,7 +221,7 @@ export default function IdxBrokerSetup() {
                 <Textarea
                   value={JSON.stringify(syncResults, null, 2)}
                   readOnly
-                  className="h-40 font-mono text-xs bg-slate-50 mt-3"
+                  className="h-40 font-mono text-xs bg-muted mt-3"
                 />
               </div>
             )}
@@ -229,13 +229,13 @@ export default function IdxBrokerSetup() {
         </Card>
 
         {/* Support Info */}
-        <Card className="mt-6 shadow-lg border-slate-200 bg-slate-50">
+        <Card className="mt-6 shadow-lg border-border bg-muted">
           <CardContent className="p-6">
-            <h4 className="font-semibold mb-2 text-slate-900">Need Help?</h4>
-            <p className="text-sm text-slate-600">
+            <h4 className="font-semibold mb-2 text-foreground">Need Help?</h4>
+            <p className="text-sm text-muted-foreground">
               If you continue to experience issues, contact IDX Broker support with your account ID and API key to verify:
             </p>
-            <ul className="mt-2 text-sm text-slate-600 space-y-1 ml-5 list-disc">
+            <ul className="mt-2 text-sm text-muted-foreground space-y-1 ml-5 list-disc">
               <li>Your API access level</li>
               <li>Middleware API is enabled</li>
               <li>Correct MLS feeds are active</li>

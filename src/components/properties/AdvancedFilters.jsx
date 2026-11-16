@@ -9,21 +9,21 @@ function FilterCheckbox({ id, label, checked, onChange }) {
   return (
     <div className="flex items-center space-x-2 py-1">
       <Checkbox id={id} checked={checked} onCheckedChange={(c) => onChange(!!c)} />
-      <label htmlFor={id} className="text-sm text-slate-700 cursor-pointer">{label}</label>
+      <label htmlFor={id} className="text-sm text-muted-foreground cursor-pointer">{label}</label>
     </div>
   );
 }
 
 function Section({ title, open, onToggle, children }) {
   return (
-    <div className="border-t border-slate-200 pt-3">
+    <div className="border-t border-border pt-3">
       <button
         type="button"
         onClick={onToggle}
         className="flex items-center justify-between w-full text-left"
       >
-        <Label className="text-xs font-semibold text-slate-500 uppercase tracking-wide cursor-pointer">{title}</Label>
-        {open ? <ChevronUp className="h-4 w-4 text-slate-400" /> : <ChevronDown className="h-4 w-4 text-slate-400" />}
+        <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide cursor-pointer">{title}</Label>
+        {open ? <ChevronUp className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
       </button>
       {open && <div className="mt-2 space-y-1">{children}</div>}
     </div>
@@ -48,17 +48,17 @@ export default function AdvancedFilters({ filters, onChange, onBatchChange }) {
   return (
     <div className="space-y-3 mt-4">
       <div className="flex items-center gap-2">
-        <div className="h-px flex-1 bg-slate-200" />
-        <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Advanced</span>
-        <div className="h-px flex-1 bg-slate-200" />
+        <div className="h-px flex-1 bg-muted" />
+        <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Advanced</span>
+        <div className="h-px flex-1 bg-muted" />
       </div>
 
       {/* Lot & Land */}
       <Section title="Lot & Land" open={openSections.lot} onToggle={() => toggle('lot')}>
         <div className="space-y-1">
-          <Label className="text-xs text-slate-500">Min Lot Size</Label>
+          <Label className="text-xs text-muted-foreground">Min Lot Size</Label>
           <Select value={filters.min_lot_size || ''} onValueChange={(v) => onChange('min_lot_size', v === 'any' ? '' : v)}>
-            <SelectTrigger className="border-slate-300"><SelectValue placeholder="Any" /></SelectTrigger>
+            <SelectTrigger className="border-border"><SelectValue placeholder="Any" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="any">Any</SelectItem>
               <SelectItem value="0.115">5,000 sq ft or less</SelectItem>
@@ -83,9 +83,9 @@ export default function AdvancedFilters({ filters, onChange, onBatchChange }) {
       {/* Community */}
       <Section title="Community" open={openSections.community} onToggle={() => toggle('community')}>
         <div className="space-y-1">
-          <Label className="text-xs text-slate-500">HOA</Label>
+          <Label className="text-xs text-muted-foreground">HOA</Label>
           <Select value={filters.hoa_filter || ''} onValueChange={(v) => onChange('hoa_filter', v === 'either' ? '' : v)}>
-            <SelectTrigger className="border-slate-300"><SelectValue placeholder="Either" /></SelectTrigger>
+            <SelectTrigger className="border-border"><SelectValue placeholder="Either" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="either">Either</SelectItem>
               <SelectItem value="yes">Yes (HOA)</SelectItem>
@@ -112,9 +112,9 @@ export default function AdvancedFilters({ filters, onChange, onBatchChange }) {
       {/* Condition & Energy */}
       <Section title="Condition & Energy" open={openSections.condition} onToggle={() => toggle('condition')}>
         <div className="space-y-1">
-          <Label className="text-xs text-slate-500">Year Built</Label>
+          <Label className="text-xs text-muted-foreground">Year Built</Label>
           <Select value={filters.year_built_preset || ''} onValueChange={handleYearPreset}>
-            <SelectTrigger className="border-slate-300"><SelectValue placeholder="Any" /></SelectTrigger>
+            <SelectTrigger className="border-border"><SelectValue placeholder="Any" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="any">Any</SelectItem>
               <SelectItem value="2015">2015+</SelectItem>
@@ -128,12 +128,12 @@ export default function AdvancedFilters({ filters, onChange, onBatchChange }) {
         {filters.year_built_preset === 'custom' && (
           <div className="grid grid-cols-2 gap-2">
             <div className="space-y-1">
-              <Label className="text-xs text-slate-500">From</Label>
-              <Input type="number" placeholder="e.g. 1980" value={filters.min_year_built} onChange={(e) => onChange('min_year_built', e.target.value)} className="border-slate-300" />
+              <Label className="text-xs text-muted-foreground">From</Label>
+              <Input type="number" placeholder="e.g. 1980" value={filters.min_year_built} onChange={(e) => onChange('min_year_built', e.target.value)} className="border-border" />
             </div>
             <div className="space-y-1">
-              <Label className="text-xs text-slate-500">To</Label>
-              <Input type="number" placeholder="e.g. 2024" value={filters.max_year_built} onChange={(e) => onChange('max_year_built', e.target.value)} className="border-slate-300" />
+              <Label className="text-xs text-muted-foreground">To</Label>
+              <Input type="number" placeholder="e.g. 2024" value={filters.max_year_built} onChange={(e) => onChange('max_year_built', e.target.value)} className="border-border" />
             </div>
           </div>
         )}
@@ -146,8 +146,8 @@ export default function AdvancedFilters({ filters, onChange, onBatchChange }) {
       {/* Schools */}
       <Section title="Schools" open={openSections.schools} onToggle={() => toggle('schools')}>
         <div className="space-y-1">
-          <Label className="text-xs text-slate-500">School Name</Label>
-          <Input placeholder="Search school name" value={filters.school_name} onChange={(e) => onChange('school_name', e.target.value)} className="border-slate-300" />
+          <Label className="text-xs text-muted-foreground">School Name</Label>
+          <Input placeholder="Search school name" value={filters.school_name} onChange={(e) => onChange('school_name', e.target.value)} className="border-border" />
         </div>
       </Section>
 

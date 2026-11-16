@@ -1,5 +1,6 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { supabaseAdmin, corsHeaders, jsonResponse } from '../_shared/supabaseAdmin.ts';
+import { SPARK_RESO_BASE, sparkToken, sparkFetch } from '../_shared/spark.ts';
 
 // =============================================================================
 // checkInactiveListings — reconcile the public `properties` table against the
@@ -30,7 +31,7 @@ import { supabaseAdmin, corsHeaders, jsonResponse } from '../_shared/supabaseAdm
 // SAFETY: defaults to dry-run. Pass {"confirmDelete": true} to actually delete.
 // =============================================================================
 
-const RESO = 'https://replication.sparkapi.com/Reso/OData/Property';
+const RESO = `${SPARK_RESO_BASE}/Property`;
 const LOCAL_PAGE_SIZE = 1000;
 const RESO_TOP = 1000;
 const HARD_PAGE_CAP = 120; // 120 * 1000 = 120k ceiling; active set is ~38k
@@ -42,8 +43,7 @@ serve(async (req) => {
   const dryRun = body?.confirmDelete !== true || body?.dryRun === true;
 
   try {
-    const accessToken = Deno.env.get('SPARK_OAUTH_ACCESS_TOKEN');
-    if (!accessToken) throw new Error('SPARK_OAUTH_ACCESS_TOKEN not set');
+    const accessToken = sparkToken();
 
     // ─── Step 1: all listing keys currently in our public table ───────────
     const localKeys = new Set<string>();
@@ -68,7 +68,7 @@ serve(async (req) => {
     let httpErr = 0;
 
     while (url && pages < HARD_PAGE_CAP) {
-      const res = await fetch(url, { headers: { Authorization: `Bearer ${accessToken}`, Accept: 'application/json' } });
+      const res = await sparkFetch(url, accessToken);
       if (!res.ok) {
         httpErr = res.status;
         console.error(`[checkInactiveListings] RESO page ${pages} HTTP ${res.status}`);

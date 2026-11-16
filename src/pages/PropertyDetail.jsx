@@ -24,6 +24,9 @@ import PropertyCard from '../components/properties/PropertyCard';
 import PropertyDetailSkeleton from '../components/properties/PropertyDetailSkeleton';
 import { listingPhotoProps, preloadPhotos, sparkPhoto, PHOTO_PLACEHOLDER, HIGH_FETCH_PRIORITY } from '@/lib/listingPhotos';
 import { getAmenities, getPriceCut, getOpenHouse, getListedLabel } from '@/lib/listingBadges';
+import { getAttribution } from '@/lib/attribution';
+import { trackLead } from '@/lib/leadTracking';
+import RemovedListing from '../components/properties/RemovedListing';
 
 // ============================================================================
 // MORTGAGE PAYMENT CALCULATION
@@ -102,8 +105,13 @@ export default function PropertyDetail() {
   const [showLoginGate, setShowLoginGate] = useState(false);
   const [contactSubmitting, setContactSubmitting] = useState(false);
   const [contactSuccess, setContactSuccess] = useState(false);
-  const [questionOpen, setQuestionOpen] = useState(false);
-  const [questionText, setQuestionText] = useState('');
+  // Tour / question dialog: null when closed, else 'tour' | 'question'.
+  const [contactIntent, setContactIntent] = useState(null);
+  const [contactMessage, setContactMessage] = useState('');
+  const [contactPhone, setContactPhone] = useState('');
+  const [tourDate, setTourDate] = useState('');
+  const [tourTime, setTourTime] = useState('');
+  const [contactError, setContactError] = useState('');
 
   // Mortgage calculator state — defaults match the conventional buyer profile
   // (20% down, 30-year fixed, 6.5% rate). Buyers can adjust each value via the
@@ -111,6 +119,9 @@ export default function PropertyDetail() {
   const [downPaymentPct, setDownPaymentPct] = useState(20);
   const [loanTermYears, setLoanTermYears] = useState(30);
   const [interestRate, setInterestRate] = useState(FALLBACK_RATE);
+  // Hold the payment estimate until the live rate settles, so it doesn't
+  // render at the fallback rate and then jump (the "flicker" in the brief).
+  const [rateReady, setRateReady] = useState(false);
 
   const urlParams = new URLSearchParams(window.location.search);
   const propertyId = urlParams.get('id');
@@ -161,7 +172,7 @@ export default function PropertyDetail() {
   });
 
   // Freddie Mac weekly averages (same source as the rate ticker).
-  const { data: liveRates } = useQuery({
+  const { data: liveRates, isFetched: ratesFetched } = useQuery({
     queryKey: ['mortgageRates'],
     queryFn: () => invokeFunction('getMortgageRates', {}),
     staleTime: 12 * 60 * 60_000,
@@ -170,7 +181,8 @@ export default function PropertyDetail() {
   const liveRateForTerm = loanTermYears === 15 ? liveRates?.fifteen_year_fixed : liveRates?.thirty_year_fixed;
   useEffect(() => {
     if (!rateTouched && typeof liveRateForTerm === 'number') setInterestRate(liveRateForTerm);
-  }, [liveRateForTerm, rateTouched]);
+    if (ratesFetched) setRateReady(true);
+  }, [liveRateForTerm, rateTouched, ratesFetched]);
 
   const { data: similarHomes = [] } = useQuery({
     queryKey: ['similarHomes', propertyId, property?.city, property?.price, property?.bedrooms],
@@ -206,6 +218,15 @@ export default function PropertyDetail() {
     enabled: !!property?.city && !!property?.price,
     staleTime: 60000  // cache for 1 minute — same property page revisits within a minute reuse the cached result
   });
+
+  // Tab title per listing (share crawlers get theirs from /middleware.js).
+  useEffect(() => {
+    if (!property) return undefined;
+    const previous = document.title;
+    const price = property.price ? `$${Math.round(property.price).toLocaleString('en-US')} · ` : '';
+    document.title = `${price}${property.address}, ${property.city} · Crandell Real Estate Team`;
+    return () => { document.title = previous; };
+  }, [property]);
 
   // Check if saved
   useEffect(() => {
@@ -334,72 +355,64 @@ export default function PropertyDetail() {
   };
 
   // ============================================================================
-  // CRANDELL CONTACT HANDLER
+  // CRANDELL CONTACT (tour + question)
   // ----------------------------------------------------------------------------
-  // contactAgentForProperty sends a Follow Up Boss "Property Inquiry" event
-  // routed to Tanner Crandell — NOT to the listing brokerage shown in the
-  // legally-required ARMLS attribution. Tours go straight through; questions
-  // open a dialog first so the buyer's actual question reaches Tanner.
+  // Both actions open a dialog, so the buyer always sees what they are sending.
+  // contactAgentForProperty saves the lead and answers immediately; Follow Up
+  // Boss delivery and the email to Tanner happen in the background. Sign in is
+  // still required at this action point (browse first, register to act).
   // ============================================================================
-  const handleCrandellContact = async (intent, message = '') => {
+  const openContact = (intent) => {
     if (!user) {
       navigate('/Login');
-      return false;
+      return;
     }
+    setContactError('');
+    setContactPhone((prev) => prev || user.phone || '');
+    setContactIntent(intent);
+  };
+
+  const submitContact = async (e) => {
+    e.preventDefault();
+    const intent = contactIntent;
+    const message = contactMessage.trim();
+    if (intent === 'question' && !message) return;
     setContactSubmitting(true);
+    setContactError('');
     try {
       const response = await invokeFunction('contactAgentForProperty', {
         property: { id: property.id },
         intent,
         message,
+        phone: contactPhone.trim(),
+        ...(intent === 'tour' ? { preferred_date: tourDate, preferred_time: tourTime } : {}),
+        attribution: getAttribution(),
       });
-      if (response?.success) {
-        setContactSuccess(true);
-        setTimeout(() => setContactSuccess(false), 5000);
-        return true;
-      }
-      alert('Sorry — we couldn\'t send your request. Please call (480) 544-1539.');
-      return false;
+      if (!response?.success) throw new Error(response?.error || 'failed');
+      trackLead(intent === 'tour' ? 'tour_request' : 'question', { propertyId: property.id, mls: property.mls_number });
+      setContactIntent(null);
+      setContactMessage('');
+      setTourDate('');
+      setTourTime('');
+      setContactSuccess(intent);
+      setTimeout(() => setContactSuccess(false), 8000);
     } catch {
-      alert('Sorry — we couldn\'t send your request. Please call (480) 544-1539.');
-      return false;
+      setContactError("We couldn't send that. Please try again or call (480) 544-1539.");
     } finally {
       setContactSubmitting(false);
     }
   };
 
-  const openQuestion = () => {
-    if (!user) {
-      navigate('/Login');
-      return;
-    }
-    setQuestionOpen(true);
-  };
-
-  const submitQuestion = async (e) => {
-    e.preventDefault();
-    const text = questionText.trim();
-    if (!text) return;
-    const ok = await handleCrandellContact('question', text);
-    if (ok) {
-      setQuestionOpen(false);
-      setQuestionText('');
-    }
-  };
+  const todayIso = new Date().toISOString().slice(0, 10);
 
   if (isLoading) {
     return <PropertyDetailSkeleton />;
   }
 
   if (!property) {
-    return (
-      <div className="crandell-container py-20 text-center">
-        <p className="text-muted-foreground text-lg">Property not found.</p>
-        <Link to={createPageUrl('Search')}>
-          <Button className="mt-4 bg-secondary hover:bg-[var(--crandell-charcoal-hover)]">Back to Search</Button>
-        </Link>
-      </div>
-    );
+    // Sold, withdrawn or relisted. Yard sign QR codes point here, so never a
+    // dead end: forward to the relisted record or show similar active homes.
+    return <RemovedListing propertyId={propertyId} />;
   }
 
   const formatPrice = (price) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(price);
@@ -413,7 +426,7 @@ export default function PropertyDetail() {
       {showLoginGate && <LoginGateModal onClose={() => setShowLoginGate(false)} />}
 
       {/* Back to search bar */}
-      <div className="bg-white border-b border-border">
+      <div className="bg-card border-b border-border">
         <div className="crandell-container py-1 md:py-4">
           <Link to={createPageUrl('Search')}>
             <Button variant="ghost" className="text-muted-foreground hover:text-foreground">
@@ -467,7 +480,7 @@ export default function PropertyDetail() {
                   </>
                 )}
                 {images.length > 1 && (
-                  <button type="button" onClick={() => setShowGrid(true)} className="absolute bottom-4 left-4 h-9 px-3 bg-white/95 hover:bg-white rounded-full flex items-center gap-2 text-sm font-medium text-foreground shadow focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"><LayoutGrid className="h-4 w-4" aria-hidden="true" />View all {images.length} photos</button>
+                  <button type="button" onClick={() => setShowGrid(true)} className="absolute bottom-4 left-4 h-9 px-3 bg-white/95 hover:bg-card rounded-full flex items-center gap-2 text-sm font-medium text-foreground shadow focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"><LayoutGrid className="h-4 w-4" aria-hidden="true" />View all {images.length} photos</button>
                 )}
                 <button type="button" onClick={() => setIsFullscreen(true)} aria-label="View image fullscreen" className="absolute top-4 right-4 h-10 w-10 bg-black/50 hover:bg-black/70 backdrop-blur-sm rounded-full flex items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"><Expand className="h-5 w-5 text-white" aria-hidden="true" /></button>
                 {images.length > 1 && (
@@ -483,7 +496,7 @@ export default function PropertyDetail() {
                           role="tab"
                           aria-selected={idx === currentImageIndex}
                           aria-label={`Go to image ${idx + 1}`}
-                          className={`h-2 rounded-full transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white ${idx === currentImageIndex ? 'w-8 bg-white' : 'w-2 bg-white/50 hover:bg-white/75'}`}
+                          className={`h-2 rounded-full transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white ${idx === currentImageIndex ? 'w-8 bg-card' : 'w-2 bg-white/50 hover:bg-white/75'}`}
                         />
                       ))}
                     </div>
@@ -539,8 +552,8 @@ export default function PropertyDetail() {
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 py-6 border-y border-border">
                   <div className="text-center"><div className="flex items-center justify-center gap-2 mb-1"><Bed className="h-5 w-5 text-muted-foreground" /><span className="text-2xl font-bold text-foreground">{property.bedrooms}</span></div><p className="text-sm text-muted-foreground">Bedrooms</p></div>
                   <div className="text-center"><div className="flex items-center justify-center gap-2 mb-1"><Bath className="h-5 w-5 text-muted-foreground" /><span className="text-2xl font-bold text-foreground">{property.bathrooms}</span></div><p className="text-sm text-muted-foreground">Bathrooms</p></div>
-                  <div className="text-center"><div className="flex items-center justify-center gap-2 mb-1"><Square className="h-5 w-5 text-muted-foreground" /><span className="text-2xl font-bold text-foreground">{property.square_feet?.toLocaleString()}</span></div><p className="text-sm text-muted-foreground">Sq Ft</p></div>
-                  <div className="text-center"><div className="flex items-center justify-center gap-2 mb-1"><Calendar className="h-5 w-5 text-muted-foreground" /><span className="text-2xl font-bold text-foreground">{property.year_built}</span></div><p className="text-sm text-muted-foreground">Year Built</p></div>
+                  <div className="text-center"><div className="flex items-center justify-center gap-2 mb-1"><Square className="h-5 w-5 text-muted-foreground" /><span className="text-2xl font-bold text-foreground">{property.square_feet > 0 ? property.square_feet.toLocaleString() : '—'}</span></div><p className="text-sm text-muted-foreground">Sq Ft</p></div>
+                  <div className="text-center"><div className="flex items-center justify-center gap-2 mb-1"><Calendar className="h-5 w-5 text-muted-foreground" /><span className="text-2xl font-bold text-foreground">{property.year_built || '—'}</span></div><p className="text-sm text-muted-foreground">Year Built</p></div>
                 </div>
 
                 {openHouse && (
@@ -687,8 +700,10 @@ export default function PropertyDetail() {
                   </p>
 
                   {contactSuccess ? (
-                    <div className="bg-green-50 border border-green-200 rounded-lg p-3 text-sm text-green-800">
-                      ✓ Got it. Tanner will reach out shortly.
+                    <div className="bg-green-50 border border-green-200 rounded-lg p-3 text-sm text-green-800" role="status">
+                      ✓ {contactSuccess === 'tour'
+                        ? 'Tour request sent. Tanner will confirm a time with you shortly.'
+                        : 'Question sent. Tanner will reply shortly.'}
                     </div>
                   ) : (
                     <div className="space-y-2">
@@ -696,7 +711,7 @@ export default function PropertyDetail() {
                         variant="brand"
                         className="w-full"
                         disabled={contactSubmitting}
-                        onClick={() => handleCrandellContact('tour')}
+                        onClick={() => openContact('tour')}
                       >
                         {contactSubmitting ? (
                           <Loader2 className="h-4 w-4 animate-spin mr-2" />
@@ -709,7 +724,7 @@ export default function PropertyDetail() {
                         variant="brandOutline"
                         className="w-full"
                         disabled={contactSubmitting}
-                        onClick={openQuestion}
+                        onClick={() => openContact('question')}
                       >
                         <MessageCircle className="h-4 w-4 mr-2" />
                         Ask a Question
@@ -780,10 +795,14 @@ export default function PropertyDetail() {
                       {/* Total monthly — the loudest visual element */}
                       <div className="bg-primary/5 border border-primary/20 rounded-lg p-4 mb-5">
                         <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Estimated total</p>
-                        <p className="text-3xl font-bold text-foreground">
-                          {formatPrice(Math.round(totalMonthly))}
-                          <span className="text-base font-normal text-muted-foreground">/mo</span>
-                        </p>
+                        {rateReady ? (
+                          <p className="text-3xl font-bold text-foreground">
+                            {formatPrice(Math.round(totalMonthly))}
+                            <span className="text-base font-normal text-muted-foreground">/mo</span>
+                          </p>
+                        ) : (
+                          <div className="h-9 w-40 rounded bg-muted animate-pulse" aria-label="Loading current rates" />
+                        )}
                       </div>
 
                       {/* Down payment slider */}
@@ -816,7 +835,7 @@ export default function PropertyDetail() {
                               className={`py-2 px-3 rounded-md text-sm font-medium border transition-colors ${
                                 loanTermYears === years
                                   ? 'bg-primary text-primary-foreground border-primary'
-                                  : 'bg-white text-foreground border-border hover:border-primary'
+                                  : 'bg-card text-foreground border-border hover:border-primary'
                               }`}
                             >
                               {years} yr
@@ -829,7 +848,7 @@ export default function PropertyDetail() {
                       <div className="mb-5">
                         <div className="flex items-center justify-between mb-2">
                           <label className="text-xs text-muted-foreground font-medium">Interest rate</label>
-                          <span className="text-xs font-semibold text-foreground">{interestRate.toFixed(3)}%</span>
+                          <span className="text-xs font-semibold text-foreground">{rateReady ? `${interestRate.toFixed(3)}%` : '…'}</span>
                         </div>
                         {!rateTouched && typeof liveRateForTerm === 'number' && (
                           <p className="text-[11px] text-muted-foreground mb-1">
@@ -961,15 +980,15 @@ export default function PropertyDetail() {
         style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
       >
         {contactSuccess ? (
-          <div className="px-4 py-4 text-sm text-center text-green-800 bg-green-50">
-            ✓ Got it. Tanner will reach out shortly.
+          <div className="px-4 py-4 text-sm text-center text-green-800 bg-green-50" role="status">
+            ✓ {contactSuccess === 'tour' ? 'Tour request sent. Tanner will confirm a time.' : 'Question sent. Tanner will reply shortly.'}
           </div>
         ) : (
           <div className="flex items-center gap-2 px-4 py-3">
             <a
               href="tel:+14805441539"
               aria-label="Call the Crandell Real Estate Team"
-              className="h-11 w-11 flex-shrink-0 rounded-[2px] border border-secondary text-secondary flex items-center justify-center"
+              className="h-11 w-11 flex-shrink-0 rounded-full border border-secondary text-secondary flex items-center justify-center"
             >
               <Phone className="h-5 w-5" />
             </a>
@@ -977,7 +996,7 @@ export default function PropertyDetail() {
               variant="brandOutline"
               className="flex-1 px-2"
               disabled={contactSubmitting}
-              onClick={openQuestion}
+              onClick={() => openContact('question')}
             >
               Ask
             </Button>
@@ -985,7 +1004,7 @@ export default function PropertyDetail() {
               variant="brand"
               className="flex-[2] px-2"
               disabled={contactSubmitting}
-              onClick={() => handleCrandellContact('tour')}
+              onClick={() => openContact('tour')}
             >
               {contactSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <CalendarCheck className="h-4 w-4" />}
               Schedule Tour
@@ -994,32 +1013,91 @@ export default function PropertyDetail() {
         )}
       </div>
 
-      <Dialog open={questionOpen} onOpenChange={setQuestionOpen}>
+      <Dialog open={!!contactIntent} onOpenChange={(open) => { if (!open && !contactSubmitting) setContactIntent(null); }}>
         <DialogContent className="sm:max-w-lg">
-          <form onSubmit={submitQuestion}>
+          <form onSubmit={submitContact} className="space-y-4">
             <DialogHeader>
-              <DialogTitle>Ask Tanner about this home</DialogTitle>
+              <DialogTitle>{contactIntent === 'tour' ? 'Schedule a tour' : 'Ask Tanner about this home'}</DialogTitle>
               <DialogDescription>
-                {property.address}, {property.city}. Tanner will reply by text or email.
+                {property.address}, {property.city}.{' '}
+                {contactIntent === 'tour'
+                  ? 'Pick a day that works and Tanner will confirm the showing.'
+                  : 'Tanner will reply by text or email.'}
               </DialogDescription>
             </DialogHeader>
-            <Textarea
-              value={questionText}
-              onChange={(e) => setQuestionText(e.target.value)}
-              placeholder="e.g. Is the seller open to concessions? How old is the roof?"
-              maxLength={2000}
-              rows={5}
-              autoFocus
-              className="my-4"
-              aria-label="Your question"
-            />
+
+            {contactIntent === 'tour' && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <label className="text-sm text-foreground">
+                  <span className="block mb-1 font-medium">Preferred day</span>
+                  <input
+                    type="date"
+                    min={todayIso}
+                    value={tourDate}
+                    onChange={(e) => setTourDate(e.target.value)}
+                    className="w-full h-10 rounded-md border border-input bg-card px-3 text-sm"
+                  />
+                </label>
+                <label className="text-sm text-foreground">
+                  <span className="block mb-1 font-medium">Time of day</span>
+                  <select
+                    value={tourTime}
+                    onChange={(e) => setTourTime(e.target.value)}
+                    className="w-full h-10 rounded-md border border-input bg-card px-3 text-sm"
+                  >
+                    <option value="">Any time</option>
+                    <option value="Morning">Morning</option>
+                    <option value="Afternoon">Afternoon</option>
+                    <option value="Evening">Evening</option>
+                  </select>
+                </label>
+              </div>
+            )}
+
+            <label className="block text-sm text-foreground">
+              <span className="block mb-1 font-medium">
+                {contactIntent === 'tour' ? 'Anything Tanner should know? (optional)' : 'Your question'}
+              </span>
+              <Textarea
+                value={contactMessage}
+                onChange={(e) => setContactMessage(e.target.value)}
+                placeholder={contactIntent === 'tour'
+                  ? 'e.g. We can only do weekends, or we are pre-approved'
+                  : 'e.g. Is the seller open to concessions? How old is the roof?'}
+                maxLength={2000}
+                rows={4}
+                autoFocus={contactIntent === 'question'}
+              />
+            </label>
+
+            <label className="block text-sm text-foreground">
+              <span className="block mb-1 font-medium">Phone (optional)</span>
+              <input
+                type="tel"
+                autoComplete="tel"
+                value={contactPhone}
+                onChange={(e) => setContactPhone(e.target.value)}
+                placeholder="(480) 555-0123"
+                maxLength={30}
+                className="w-full h-10 rounded-md border border-input bg-card px-3 text-sm"
+              />
+            </label>
+
+            {contactError && <p className="text-sm text-destructive" role="alert">{contactError}</p>}
+
             <DialogFooter className="gap-2 sm:gap-0">
-              <Button type="button" variant="brandOutline" onClick={() => setQuestionOpen(false)}>
+              <Button type="button" variant="brandOutline" onClick={() => setContactIntent(null)} disabled={contactSubmitting}>
                 Cancel
               </Button>
-              <Button type="submit" variant="brand" disabled={contactSubmitting || !questionText.trim()}>
-                {contactSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <MessageCircle className="h-4 w-4" />}
-                Send Question
+              <Button
+                type="submit"
+                variant="brand"
+                disabled={contactSubmitting || (contactIntent === 'question' && !contactMessage.trim())}
+              >
+                {contactSubmitting
+                  ? <Loader2 className="h-4 w-4 animate-spin" />
+                  : contactIntent === 'tour' ? <CalendarCheck className="h-4 w-4" /> : <MessageCircle className="h-4 w-4" />}
+                {contactIntent === 'tour' ? 'Request tour' : 'Send question'}
               </Button>
             </DialogFooter>
           </form>
@@ -1072,7 +1150,7 @@ export default function PropertyDetail() {
 
       {/* All-photos grid */}
       {showGrid && (
-        <div className="fixed inset-0 z-50 bg-white overflow-y-auto" role="dialog" aria-modal="true" aria-label="All photos">
+        <div className="fixed inset-0 z-50 bg-card overflow-y-auto" role="dialog" aria-modal="true" aria-label="All photos">
           <div className="sticky top-0 z-10 bg-white/95 backdrop-blur border-b border-border">
             <div className="crandell-container flex items-center justify-between py-3">
               <div className="min-w-0">

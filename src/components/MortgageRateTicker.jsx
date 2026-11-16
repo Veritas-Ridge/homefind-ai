@@ -83,7 +83,7 @@ export default function MortgageRateTicker() {
   const tickerItems = [...rates, ...rates, ...rates, ...rates];
 
   return (
-    <div className="bg-gray-900 text-white overflow-hidden border-t border-gray-700 max-w-[100vw]" style={{ height: '36px' }}>
+    <div className="bg-secondary text-white overflow-hidden border-t border-white/10 max-w-[100vw]" style={{ height: '36px' }}>
       <div className="flex items-center h-full">
         {/* Label — uses brand primary instead of hardcoded #52ADEA */}
         <div className="flex-shrink-0 bg-primary px-3 h-full flex items-center z-10">
@@ -94,13 +94,13 @@ export default function MortgageRateTicker() {
         <div className="relative flex-1 overflow-hidden h-full">
           {loading ? (
             <div className="flex items-center h-full px-4">
-              <span className="text-xs text-gray-400 animate-pulse">Loading rates...</span>
+              <span className="text-xs text-[var(--crandell-footer-muted)] animate-pulse">Loading rates...</span>
             </div>
           ) : (
             <div className="flex items-center h-full animate-ticker whitespace-nowrap">
               {tickerItems.map((item, i) => (
                 <span key={i} className="inline-flex items-center gap-1.5 mx-6 text-xs">
-                  <span className="text-gray-400 font-medium">{item.label}</span>
+                  <span className="text-[var(--crandell-footer-muted)] font-medium">{item.label}</span>
                   <span className="text-white font-bold">
                     {item.rate != null ? `${item.rate.toFixed(2)}%` : '—'}
                   </span>
@@ -112,8 +112,8 @@ export default function MortgageRateTicker() {
 
         {/* Last updated */}
         {lastUpdated && (
-          <div className="flex-shrink-0 px-3 h-full hidden md:flex items-center border-l border-gray-700">
-            <span className="text-xs text-gray-500">
+          <div className="flex-shrink-0 px-3 h-full hidden md:flex items-center border-l border-white/15">
+            <span className="text-xs text-[var(--crandell-footer-muted)]">
               {lastUpdated.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
             </span>
           </div>

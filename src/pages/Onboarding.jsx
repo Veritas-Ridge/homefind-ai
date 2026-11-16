@@ -195,11 +195,11 @@ export default function Onboarding() {
   const progressPct = ((step + 1) / TOTAL_STEPS) * 100;
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col">
+    <div className="min-h-screen bg-muted flex flex-col">
       {/* Progress bar */}
-      <div className="w-full h-1 bg-slate-200">
+      <div className="w-full h-1 bg-muted">
         <div
-          className="h-full bg-[#00AFE5] transition-all duration-300"
+          className="h-full bg-[#4F90B5] transition-all duration-300"
           style={{ width: `${progressPct}%` }}
         />
       </div>
@@ -211,7 +211,7 @@ export default function Onboarding() {
             <button
               type="button"
               onClick={handleSkip}
-              className="text-sm text-slate-400 hover:text-slate-600 transition-colors"
+              className="text-sm text-muted-foreground hover:text-muted-foreground transition-colors"
             >
               Skip for now
             </button>
@@ -219,19 +219,19 @@ export default function Onboarding() {
 
           {/* Step header */}
           <div className="text-center mb-8">
-            <p className="text-xs text-[#00AFE5] font-semibold uppercase tracking-wider mb-2">
+            <p className="text-xs text-[#4F90B5] font-semibold uppercase tracking-wider mb-2">
               Step {step + 1} of {TOTAL_STEPS}
             </p>
-            <h1 className="text-3xl font-bold text-slate-900 mb-2">
+            <h1 className="text-3xl font-bold text-foreground mb-2">
               {STEPS[step].title}
             </h1>
-            <p className="text-slate-500">
+            <p className="text-muted-foreground">
               {STEPS[step].subtitle}
             </p>
           </div>
 
           {/* Step content */}
-          <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 md:p-8 mb-6">
+          <div className="bg-card rounded-xl border border-border shadow-sm p-6 md:p-8 mb-6">
             {/* Step 1: Priorities */}
             {step === 0 && (
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
@@ -244,8 +244,8 @@ export default function Onboarding() {
                       onClick={() => togglePriority(opt.value)}
                       className={`flex items-center gap-2.5 px-4 py-3.5 rounded-lg border-2 text-sm font-medium transition-all text-left ${
                         selected
-                          ? 'border-[#00AFE5] bg-[#00AFE5]/5 text-[#00AFE5]'
-                          : 'border-slate-200 text-slate-700 hover:border-slate-300'
+                          ? 'border-[#4F90B5] bg-[#4F90B5]/5 text-[#4F90B5]'
+                          : 'border-border text-muted-foreground hover:border-border'
                       }`}
                     >
                       {selected && <Check className="h-4 w-4 flex-shrink-0" />}
@@ -260,11 +260,11 @@ export default function Onboarding() {
             {step === 1 && (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-2">Minimum price</label>
+                  <label className="block text-sm font-medium text-muted-foreground mb-2">Minimum price</label>
                   <select
                     value={minPrice}
                     onChange={(e) => setMinPrice(e.target.value)}
-                    className="w-full border border-slate-200 rounded-lg px-4 py-3 text-sm bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#00AFE5] focus:border-transparent"
+                    className="w-full border border-border rounded-lg px-4 py-3 text-sm bg-card text-foreground focus:outline-none focus:ring-2 focus:ring-[#4F90B5] focus:border-transparent"
                   >
                     {PRICE_OPTIONS.map(opt => (
                       <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -272,11 +272,11 @@ export default function Onboarding() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-2">Maximum price</label>
+                  <label className="block text-sm font-medium text-muted-foreground mb-2">Maximum price</label>
                   <select
                     value={maxPrice}
                     onChange={(e) => setMaxPrice(e.target.value)}
-                    className="w-full border border-slate-200 rounded-lg px-4 py-3 text-sm bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#00AFE5] focus:border-transparent"
+                    className="w-full border border-border rounded-lg px-4 py-3 text-sm bg-card text-foreground focus:outline-none focus:ring-2 focus:ring-[#4F90B5] focus:border-transparent"
                   >
                     {MAX_PRICE_OPTIONS.map(opt => (
                       <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -299,8 +299,8 @@ export default function Onboarding() {
                         onClick={() => toggleCity(city)}
                         className={`px-4 py-2.5 rounded-full text-sm font-medium transition-all ${
                           selected
-                            ? 'bg-[#00AFE5] text-white'
-                            : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                            ? 'bg-[#4F90B5] text-white'
+                            : 'bg-muted text-muted-foreground hover:bg-muted'
                         }`}
                       >
                         {city}
@@ -309,7 +309,7 @@ export default function Onboarding() {
                   })}
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-2">
+                  <label className="block text-sm font-medium text-muted-foreground mb-2">
                     Other area not listed above?
                   </label>
                   <input
@@ -317,7 +317,7 @@ export default function Onboarding() {
                     value={otherCity}
                     onChange={(e) => setOtherCity(e.target.value)}
                     placeholder="Type a city or area name"
-                    className="w-full border border-slate-200 rounded-lg px-4 py-3 text-sm bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#00AFE5] focus:border-transparent"
+                    className="w-full border border-border rounded-lg px-4 py-3 text-sm bg-card text-foreground focus:outline-none focus:ring-2 focus:ring-[#4F90B5] focus:border-transparent"
                   />
                 </div>
               </div>
@@ -327,7 +327,7 @@ export default function Onboarding() {
             {step === 3 && (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-3">Bedrooms</label>
+                  <label className="block text-sm font-medium text-muted-foreground mb-3">Bedrooms</label>
                   <div className="flex gap-2">
                     {['', '2', '3', '4', '5'].map((val) => {
                       const label = val === '' ? 'Any' : `${val}+`;
@@ -338,8 +338,8 @@ export default function Onboarding() {
                           onClick={() => setMinBeds(val)}
                           className={`flex-1 py-3 rounded-lg text-sm font-medium border-2 transition-all ${
                             minBeds === val
-                              ? 'border-[#00AFE5] bg-[#00AFE5]/5 text-[#00AFE5]'
-                              : 'border-slate-200 text-slate-700 hover:border-slate-300'
+                              ? 'border-[#4F90B5] bg-[#4F90B5]/5 text-[#4F90B5]'
+                              : 'border-border text-muted-foreground hover:border-border'
                           }`}
                         >
                           {label}
@@ -349,7 +349,7 @@ export default function Onboarding() {
                   </div>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-3">Bathrooms</label>
+                  <label className="block text-sm font-medium text-muted-foreground mb-3">Bathrooms</label>
                   <div className="flex gap-2">
                     {['', '2', '3', '4'].map((val) => {
                       const label = val === '' ? 'Any' : `${val}+`;
@@ -360,8 +360,8 @@ export default function Onboarding() {
                           onClick={() => setMinBaths(val)}
                           className={`flex-1 py-3 rounded-lg text-sm font-medium border-2 transition-all ${
                             minBaths === val
-                              ? 'border-[#00AFE5] bg-[#00AFE5]/5 text-[#00AFE5]'
-                              : 'border-slate-200 text-slate-700 hover:border-slate-300'
+                              ? 'border-[#4F90B5] bg-[#4F90B5]/5 text-[#4F90B5]'
+                              : 'border-border text-muted-foreground hover:border-border'
                           }`}
                         >
                           {label}
@@ -380,9 +380,9 @@ export default function Onboarding() {
                   value={freeText}
                   onChange={(e) => setFreeText(e.target.value)}
                   placeholder="Tell us anything specific you're looking for — casita, horse property, specific school, gated community, RV garage, whatever matters to you."
-                  className="min-h-[140px] text-sm resize-none focus:ring-2 focus:ring-[#00AFE5] focus:border-transparent"
+                  className="min-h-[140px] text-sm resize-none focus:ring-2 focus:ring-[#4F90B5] focus:border-transparent"
                 />
-                <p className="text-xs text-slate-400 mt-2">
+                <p className="text-xs text-muted-foreground mt-2">
                   This helps our AI give you better recommendations and smarter search results.
                 </p>
               </div>
@@ -397,7 +397,7 @@ export default function Onboarding() {
                   type="button"
                   variant="ghost"
                   onClick={handleBack}
-                  className="text-slate-500 hover:text-slate-700"
+                  className="text-muted-foreground hover:text-muted-foreground"
                 >
                   <ArrowLeft className="h-4 w-4 mr-1" />
                   Back
@@ -409,7 +409,7 @@ export default function Onboarding() {
               type="button"
               onClick={handleNext}
               disabled={saving}
-              className="bg-[#00AFE5] hover:bg-[#0095c5] text-white px-8 py-3 font-semibold"
+              className="bg-[#4F90B5] hover:bg-[#0095c5] text-white px-8 py-3 font-semibold"
             >
               {saving ? (
                 'Saving...'

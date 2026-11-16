@@ -61,14 +61,14 @@ export default function ShareButton({ property, variant = "icon", className = ""
 
   const iconSize = variant === "icon" ? "h-4 w-4" : "h-5 w-5";
   const Icon = copied ? Check : Share2;
-  const iconColor = copied ? "text-green-600" : "text-slate-600";
+  const iconColor = copied ? "text-green-600" : "text-muted-foreground";
 
   return (
     <DropdownMenu open={open} onOpenChange={setOpen}>
       <DropdownMenuTrigger asChild>
         {variant === "icon" ? (
           <button
-            className={`h-9 w-9 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-white transition-all ${className}`}
+            className={`h-9 w-9 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-card transition-all ${className}`}
             title="Share property"
             onClick={(e) => e.stopPropagation()}
           >

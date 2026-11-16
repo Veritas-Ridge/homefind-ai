@@ -13,22 +13,22 @@ export default function LoginGateModal({ onClose }) {
   return (
     <div className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4" onClick={onClose}>
       <div
-        className="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-8 text-center relative"
+        className="bg-card rounded-2xl shadow-2xl max-w-sm w-full p-8 text-center relative"
         onClick={(e) => e.stopPropagation()}
       >
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 h-8 w-8 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors"
+          className="absolute top-4 right-4 h-8 w-8 flex items-center justify-center rounded-full hover:bg-muted transition-colors"
         >
-          <X className="h-4 w-4 text-gray-500" />
+          <X className="h-4 w-4 text-muted-foreground" />
         </button>
 
         <div className="h-16 w-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
           <Lock className="h-8 w-8 text-primary" />
         </div>
 
-        <h2 className="text-xl font-bold text-gray-900 mb-2">View All Photos</h2>
-        <p className="text-gray-500 text-sm mb-6">
+        <h2 className="text-xl font-bold text-foreground mb-2">View All Photos</h2>
+        <p className="text-muted-foreground text-sm mb-6">
           Create a free account to browse all property photos, save your favorites, and get personalized recommendations.
         </p>
 
@@ -40,7 +40,7 @@ export default function LoginGateModal({ onClose }) {
         </Button>
         <Button
           variant="ghost"
-          className="w-full text-gray-600"
+          className="w-full text-muted-foreground"
           onClick={handleLogin}
         >
           Already have an account? Sign In

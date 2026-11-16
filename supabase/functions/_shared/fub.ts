@@ -66,6 +66,38 @@ function propertyBlock(p: Record<string, any>) {
   };
 }
 
+// First touch attribution captured by the browser (src/lib/attribution.js).
+// Only known keys survive, each trimmed, so nothing arbitrary reaches FUB.
+const ATTR_KEYS = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content',
+  'gclid', 'fbclid', 'referrer', 'landing_page', 'captured_at'] as const;
+
+export function cleanAttribution(raw: unknown): Record<string, string> | null {
+  if (!raw || typeof raw !== 'object') return null;
+  const out: Record<string, string> = {};
+  for (const k of ATTR_KEYS) {
+    const v = (raw as Record<string, unknown>)[k];
+    if (typeof v === 'string' && v.trim()) out[k] = v.trim().slice(0, 500);
+  }
+  return Object.keys(out).length ? out : null;
+}
+
+// FUB events take sourceUrl plus a campaign block; this is what fills the
+// Source / Campaign columns on the person in Follow Up Boss.
+function applyAttribution(body: Record<string, any>, attr: Record<string, string> | null) {
+  if (!attr) return;
+  if (attr.landing_page) body.sourceUrl = attr.landing_page;
+  const campaign: Record<string, string> = {};
+  if (attr.utm_source) campaign.source = attr.utm_source;
+  if (attr.utm_medium) campaign.medium = attr.utm_medium;
+  if (attr.utm_campaign) campaign.campaign = attr.utm_campaign;
+  if (attr.utm_term) campaign.term = attr.utm_term;
+  if (attr.utm_content) campaign.content = attr.utm_content;
+  if (!campaign.source && attr.referrer) {
+    try { campaign.source = new URL(attr.referrer).hostname; } catch { /* ignore */ }
+  }
+  if (Object.keys(campaign).length) body.campaign = campaign;
+}
+
 function money(n: unknown) {
   return typeof n === 'number' ? `$${Math.round(n).toLocaleString('en-US')}` : '';
 }
@@ -112,7 +144,9 @@ async function buildEvent(row: FubEventRow, profile: Record<string, any>) {
       const note = typeof row.payload.message === 'string' ? row.payload.message.trim() : '';
       if (intent === 'tour') {
         tags.push('Tour Request');
+        const when = [row.payload.preferred_date, row.payload.preferred_time].filter((v) => typeof v === 'string' && v).join(', ');
         body.message = `Requested a showing of ${where} (${money(property.price)}, MLS# ${property.mls_number ?? 'n/a'}).`
+          + (when ? `\nPreferred time: ${when}.` : '')
           + (note ? `\n\n"${note}"` : '');
       } else {
         tags.push('Question');
@@ -196,6 +230,8 @@ async function buildEvent(row: FubEventRow, profile: Record<string, any>) {
       return null;
   }
 
+  if (profile.team_account) tags.push('Team Test');
+  applyAttribution(body, cleanAttribution(row.payload.attribution) ?? cleanAttribution(profile.attribution));
   body.person.tags = tags;
   return body;
 }
@@ -226,11 +262,17 @@ export async function sendEvent(row: FubEventRow): Promise<SendResult> {
   if (row.user_id) {
     const { data } = await supabaseAdmin
       .from('profiles')
-      .select('id, email, full_name, role, is_user_admin, fub_contact_id')
+      .select('id, email, full_name, phone, role, is_user_admin, fub_contact_id, attribution')
       .eq('id', row.user_id)
       .maybeSingle();
     profile = data;
-    if (profile?.role === 'admin' || profile?.is_user_admin) return { status: 'skipped', error: 'admin account' };
+    if (profile?.role === 'admin' || profile?.is_user_admin) {
+      // Passive activity from the team (views, saves, searches) stays out of
+      // the CRM. An explicit tour request or question is delivered, tagged
+      // Team Test, so the team can verify the lead path end to end.
+      if (row.event_type !== 'Property Inquiry') return { status: 'skipped', error: 'admin account' };
+      profile = { ...profile, team_account: true };
+    }
   } else {
     // Signed-out visitor (AI chat tour request): contact comes with the event.
     const person = (row.payload.person ?? {}) as Record<string, string>;

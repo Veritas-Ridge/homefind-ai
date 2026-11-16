@@ -164,10 +164,10 @@ export default function ManageUsers() {
   });
 
   const roleColors = {
-    lead: 'bg-blue-100 text-blue-800',
+    lead: 'bg-primary/10 text-primary',
     client: 'bg-green-100 text-green-800',
     partner: 'bg-purple-100 text-purple-800',
-    none: 'bg-slate-100 text-slate-600'
+    none: 'bg-muted text-muted-foreground'
   };
 
   const roleCounts = {
@@ -198,7 +198,7 @@ export default function ManageUsers() {
       content: (
         <div className="space-y-2">
           <p>Start by inviting users to your platform. Enter their name, email, and assign them a role.</p>
-          <p className="text-sm text-slate-600">• <strong>Lead</strong>: Prospective buyers<br/>
+          <p className="text-sm text-muted-foreground">• <strong>Lead</strong>: Prospective buyers<br/>
           • <strong>Client</strong>: Active buyers<br/>
           • <strong>Partner</strong>: Business partners<br/>
           • <strong>User Admin</strong>: Can manage users (admin only)</p>
@@ -216,7 +216,7 @@ export default function ManageUsers() {
       content: (
         <div className="space-y-2">
           <p>Click on any dropdown to change user roles instantly. You can:</p>
-          <p className="text-sm text-slate-600">• Update assigned roles for better organization<br/>
+          <p className="text-sm text-muted-foreground">• Update assigned roles for better organization<br/>
           • Change system roles (admins only)<br/>
           • Track invitation status<br/>
           • Delete users when needed</p>
@@ -265,7 +265,7 @@ export default function ManageUsers() {
   if (!user) {
     return (
       <div className="flex justify-center items-center min-h-screen">
-        <Loader2 className="h-8 w-8 animate-spin text-slate-600" />
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
       </div>
     );
   }
@@ -282,75 +282,75 @@ export default function ManageUsers() {
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 py-8">
       <div className="crandell-container">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-slate-900 mb-2">Manage Users</h1>
-          <p className="text-slate-600">
+          <h1 className="text-3xl font-bold text-foreground mb-2">Manage Users</h1>
+          <p className="text-muted-foreground">
             {user.role === 'admin' ? 'Manage all users and their roles' : 'Manage users you have invited'}
           </p>
         </div>
 
         {/* Stats Cards */}
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-8" data-tour="stats">
-          <Card className="bg-white shadow-lg border-slate-200">
+          <Card className="bg-card shadow-lg border-border">
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-slate-600">Total Users</p>
-                  <p className="text-2xl font-bold text-slate-900">{roleCounts.all}</p>
+                  <p className="text-sm text-muted-foreground">Total Users</p>
+                  <p className="text-2xl font-bold text-foreground">{roleCounts.all}</p>
                 </div>
-                <Users className="h-8 w-8 text-slate-300" />
+                <Users className="h-8 w-8 text-muted-foreground/70" />
               </div>
             </CardContent>
           </Card>
 
-          <Card className="bg-white shadow-lg border-blue-100">
+          <Card className="bg-card shadow-lg border-primary/30">
             <CardContent className="p-4">
               <div>
-                <p className="text-sm text-slate-600">Leads</p>
-                <p className="text-2xl font-bold text-blue-600">{roleCounts.lead}</p>
+                <p className="text-sm text-muted-foreground">Leads</p>
+                <p className="text-2xl font-bold text-primary">{roleCounts.lead}</p>
               </div>
             </CardContent>
           </Card>
 
-          <Card className="bg-white shadow-lg border-green-100">
+          <Card className="bg-card shadow-lg border-green-100">
             <CardContent className="p-4">
               <div>
-                <p className="text-sm text-slate-600">Clients</p>
+                <p className="text-sm text-muted-foreground">Clients</p>
                 <p className="text-2xl font-bold text-green-600">{roleCounts.client}</p>
               </div>
             </CardContent>
           </Card>
 
-          <Card className="bg-white shadow-lg border-purple-100">
+          <Card className="bg-card shadow-lg border-purple-100">
             <CardContent className="p-4">
               <div>
-                <p className="text-sm text-slate-600">Partners</p>
+                <p className="text-sm text-muted-foreground">Partners</p>
                 <p className="text-2xl font-bold text-purple-600">{roleCounts.partner}</p>
               </div>
             </CardContent>
           </Card>
 
-          <Card className="bg-white shadow-lg border-slate-100">
+          <Card className="bg-card shadow-lg border-border">
             <CardContent className="p-4">
               <div>
-                <p className="text-sm text-slate-600">Unassigned</p>
-                <p className="text-2xl font-bold text-slate-600">{roleCounts.none}</p>
+                <p className="text-sm text-muted-foreground">Unassigned</p>
+                <p className="text-2xl font-bold text-muted-foreground">{roleCounts.none}</p>
               </div>
             </CardContent>
           </Card>
 
-          <Card className="bg-white shadow-lg border-green-100">
+          <Card className="bg-card shadow-lg border-green-100">
             <CardContent className="p-4">
               <div>
-                <p className="text-sm text-slate-600">Active</p>
+                <p className="text-sm text-muted-foreground">Active</p>
                 <p className="text-2xl font-bold text-green-600">{userStatusCounts.active}</p>
               </div>
             </CardContent>
           </Card>
 
-          <Card className="bg-white shadow-lg border-orange-100">
+          <Card className="bg-card shadow-lg border-orange-100">
             <CardContent className="p-4">
               <div>
-                <p className="text-sm text-slate-600">Dormant</p>
+                <p className="text-sm text-muted-foreground">Dormant</p>
                 <p className="text-2xl font-bold text-orange-600">{userStatusCounts.dormant}</p>
               </div>
             </CardContent>
@@ -358,7 +358,7 @@ export default function ManageUsers() {
         </div>
 
         {/* Invite Form */}
-        <Card className="mb-6 shadow-lg border-slate-200" data-tour="invite-form">
+        <Card className="mb-6 shadow-lg border-border" data-tour="invite-form">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <UserPlus className="h-5 w-5" />
@@ -422,7 +422,7 @@ export default function ManageUsers() {
               <Button
                 type="submit"
                 disabled={inviting}
-                className="bg-slate-800 hover:bg-slate-700"
+                className="bg-secondary hover:bg-[var(--crandell-ink-hover)]"
               >
                 {inviting ? (
                   <>
@@ -441,11 +441,11 @@ export default function ManageUsers() {
         </Card>
 
         {/* Filters */}
-        <Card className="mb-6 shadow-lg border-slate-200" data-tour="filters">
+        <Card className="mb-6 shadow-lg border-border" data-tour="filters">
           <CardContent className="p-6">
             <div className="flex flex-col md:flex-row gap-4">
               <div className="flex-1 relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
                   placeholder="Search by name or email..."
                   value={searchTerm}
@@ -454,7 +454,7 @@ export default function ManageUsers() {
                 />
               </div>
               <div className="flex items-center gap-2">
-                <Filter className="h-4 w-4 text-slate-400" />
+                <Filter className="h-4 w-4 text-muted-foreground" />
                 <Select value={roleFilter} onValueChange={setRoleFilter}>
                   <SelectTrigger className="w-40">
                     <SelectValue />
@@ -494,7 +494,7 @@ export default function ManageUsers() {
         </Card>
 
         {/* Users Table */}
-        <Card className="shadow-lg border-slate-200" data-tour="user-table">
+        <Card className="shadow-lg border-border" data-tour="user-table">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Users className="h-5 w-5" />
@@ -505,12 +505,12 @@ export default function ManageUsers() {
           <CardContent>
             {isLoading ? (
               <div className="flex justify-center py-12">
-                <Loader2 className="h-8 w-8 animate-spin text-slate-600" />
+                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
               </div>
             ) : filteredUsers.length === 0 ? (
               <div className="text-center py-12">
-                <Users className="h-12 w-12 text-slate-300 mx-auto mb-3" />
-                <p className="text-slate-600">
+                <Users className="h-12 w-12 text-muted-foreground/70 mx-auto mb-3" />
+                <p className="text-muted-foreground">
                   {searchTerm || roleFilter !== 'all'
                     ? 'No users match your filters'
                     : 'No users found'}
@@ -560,7 +560,7 @@ export default function ManageUsers() {
                         </TableCell>
                         <TableCell>
                           <div className="flex items-center gap-2">
-                            <Mail className="h-4 w-4 text-slate-400" />
+                            <Mail className="h-4 w-4 text-muted-foreground" />
                             {u.email}
                           </div>
                         </TableCell>
@@ -606,7 +606,7 @@ export default function ManageUsers() {
                             </Badge>
                           )}
                           {u.status === 'invited' && (
-                            <Badge className="bg-slate-100 text-slate-700">
+                            <Badge className="bg-muted text-muted-foreground">
                               <Mail className="h-3 w-3 mr-1" />
                               Invited
                             </Badge>
@@ -670,10 +670,10 @@ export default function ManageUsers() {
                             </SelectContent>
                           </Select>
                         </TableCell>
-                        <TableCell className="text-sm text-slate-600">
+                        <TableCell className="text-sm text-muted-foreground">
                           {u.invited_by || 'System'}
                         </TableCell>
-                        <TableCell className="text-sm text-slate-600">
+                        <TableCell className="text-sm text-muted-foreground">
                           {format(new Date(u.created_at), 'MMM d, yyyy')}
                         </TableCell>
                         <TableCell>

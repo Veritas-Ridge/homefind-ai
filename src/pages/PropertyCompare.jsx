@@ -65,7 +65,7 @@ export default function PropertyCompare() {
     if (properties.length >= 2 && !comparison) generateComparison();
   }, [properties]);
 
-  if (isLoadingAuth) return <div className="min-h-screen flex items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-slate-600" /></div>;
+  if (isLoadingAuth) return <div className="min-h-screen flex items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>;
   if (!isAuthenticated) return <Navigate to="/Login" replace />;
 
   const formatPrice = (price) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(price);
@@ -83,7 +83,7 @@ export default function PropertyCompare() {
     });
   };
 
-  if (isLoading) return <div className="min-h-screen flex items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-slate-600" /></div>;
+  if (isLoading) return <div className="min-h-screen flex items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>;
 
   if (properties.length < 2) {
     return (
@@ -114,12 +114,12 @@ export default function PropertyCompare() {
       <div className="crandell-container">
         <div className="mb-8">
           <Link to={createPageUrl('Search')}><Button variant="ghost" className="mb-4"><ArrowLeft className="h-4 w-4 mr-2" /> Back to Search</Button></Link>
-          <h1 className="text-3xl font-bold text-slate-900">Property Comparison</h1>
-          <p className="text-slate-600 mt-2">Comparing {properties.length} properties side-by-side</p>
+          <h1 className="text-3xl font-bold text-foreground">Property Comparison</h1>
+          <p className="text-muted-foreground mt-2">Comparing {properties.length} properties side-by-side</p>
         </div>
 
         {comparison && (
-          <Card className="mb-8 border-slate-200 shadow-lg">
+          <Card className="mb-8 border-border shadow-lg">
             <CardHeader className="bg-gradient-to-r from-slate-800 to-slate-600 text-white">
               <CardTitle className="flex items-center gap-2"><Sparkles className="h-5 w-5" /> AI Comparison Analysis</CardTitle>
             </CardHeader>
@@ -128,55 +128,55 @@ export default function PropertyCompare() {
         )}
 
         {isLoadingAI && !comparison && (
-          <Card className="mb-8 border-slate-200 shadow-lg">
+          <Card className="mb-8 border-border shadow-lg">
             <CardContent className="p-8 flex items-center justify-center">
-              <Loader2 className="h-6 w-6 animate-spin text-slate-600 mr-3" />
-              <span className="text-slate-600">Generating AI comparison...</span>
+              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground mr-3" />
+              <span className="text-muted-foreground">Generating AI comparison...</span>
             </CardContent>
           </Card>
         )}
 
         <div className={`grid grid-cols-1 gap-6 ${COMPARE_COLUMNS[Math.min(properties.length, 4)] ?? ''}`}>
           {properties.map((property, idx) => (
-            <Card key={property.id} className="overflow-hidden shadow-lg border-slate-200">
+            <Card key={property.id} className="overflow-hidden shadow-lg border-border">
               <div className="relative aspect-[3/2] bg-muted">
                 <img {...listingPhotoProps(property.images?.[0] || property.primary_photo_url || PHOTO_PLACEHOLDER, 'card', ['thumb', 'card'])} sizes="(min-width: 1024px) 25vw, (min-width: 768px) 50vw, 100vw" alt={property.address} loading="lazy" decoding="async" className="w-full h-full object-cover" />
-                <div className="absolute top-3 left-3"><Badge className="bg-slate-800 text-white">Property {idx + 1}</Badge></div>
+                <div className="absolute top-3 left-3"><Badge className="bg-secondary text-white">Property {idx + 1}</Badge></div>
               </div>
               <CardContent className="p-6 space-y-6">
                 <div>
-                  <div className="text-xs text-slate-500 mb-1">Price</div>
-                  <div className={`text-2xl font-bold ${priceHighlight[idx] === 'lowest' ? 'text-green-600' : priceHighlight[idx] === 'highest' ? 'text-red-600' : 'text-slate-900'}`}>
+                  <div className="text-xs text-muted-foreground mb-1">Price</div>
+                  <div className={`text-2xl font-bold ${priceHighlight[idx] === 'lowest' ? 'text-green-600' : priceHighlight[idx] === 'highest' ? 'text-red-600' : 'text-foreground'}`}>
                     {formatPrice(property.price)}
                     {priceHighlight[idx] === 'lowest' && <span className="text-sm ml-2">Best Price</span>}
                   </div>
                 </div>
                 <div>
-                  <div className="text-xs text-slate-500 mb-1">Location</div>
+                  <div className="text-xs text-muted-foreground mb-1">Location</div>
                   <div className="flex items-start gap-2">
-                    <MapPin className="h-4 w-4 text-slate-400 mt-0.5 flex-shrink-0" />
-                    <div className="text-sm text-slate-700">{property.address}<br />{property.city}, {property.state} {property.zip_code}</div>
+                    <MapPin className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
+                    <div className="text-sm text-muted-foreground">{property.address}<br />{property.city}, {property.state} {property.zip_code}</div>
                   </div>
                 </div>
                 <div className="space-y-3">
-                  <div className="flex items-center justify-between"><div className="flex items-center gap-2 text-slate-600"><Bed className="h-4 w-4" /><span className="text-sm">Bedrooms</span></div><div className={`font-semibold ${bedsHighlight[idx] === 'highest' ? 'text-green-600' : 'text-slate-900'}`}>{property.bedrooms || 0}</div></div>
-                  <div className="flex items-center justify-between"><div className="flex items-center gap-2 text-slate-600"><Bath className="h-4 w-4" /><span className="text-sm">Bathrooms</span></div><div className={`font-semibold ${bathsHighlight[idx] === 'highest' ? 'text-green-600' : 'text-slate-900'}`}>{property.bathrooms || 0}</div></div>
-                  <div className="flex items-center justify-between"><div className="flex items-center gap-2 text-slate-600"><Square className="h-4 w-4" /><span className="text-sm">Square Feet</span></div><div className={`font-semibold ${sqftHighlight[idx] === 'highest' ? 'text-green-600' : 'text-slate-900'}`}>{property.square_feet?.toLocaleString() || 'N/A'}</div></div>
-                  <div className="flex items-center justify-between"><div className="flex items-center gap-2 text-slate-600"><Calendar className="h-4 w-4" /><span className="text-sm">Year Built</span></div><div className="font-semibold text-slate-900">{property.year_built || 'N/A'}</div></div>
-                  <div className="flex items-center justify-between"><div className="flex items-center gap-2 text-slate-600"><TrendingUp className="h-4 w-4" /><span className="text-sm">Days on Market</span></div><div className="font-semibold text-slate-900">{property.days_on_market || 0}</div></div>
+                  <div className="flex items-center justify-between"><div className="flex items-center gap-2 text-muted-foreground"><Bed className="h-4 w-4" /><span className="text-sm">Bedrooms</span></div><div className={`font-semibold ${bedsHighlight[idx] === 'highest' ? 'text-green-600' : 'text-foreground'}`}>{property.bedrooms || 0}</div></div>
+                  <div className="flex items-center justify-between"><div className="flex items-center gap-2 text-muted-foreground"><Bath className="h-4 w-4" /><span className="text-sm">Bathrooms</span></div><div className={`font-semibold ${bathsHighlight[idx] === 'highest' ? 'text-green-600' : 'text-foreground'}`}>{property.bathrooms || 0}</div></div>
+                  <div className="flex items-center justify-between"><div className="flex items-center gap-2 text-muted-foreground"><Square className="h-4 w-4" /><span className="text-sm">Square Feet</span></div><div className={`font-semibold ${sqftHighlight[idx] === 'highest' ? 'text-green-600' : 'text-foreground'}`}>{property.square_feet?.toLocaleString() || 'N/A'}</div></div>
+                  <div className="flex items-center justify-between"><div className="flex items-center gap-2 text-muted-foreground"><Calendar className="h-4 w-4" /><span className="text-sm">Year Built</span></div><div className="font-semibold text-foreground">{property.year_built || 'N/A'}</div></div>
+                  <div className="flex items-center justify-between"><div className="flex items-center gap-2 text-muted-foreground"><TrendingUp className="h-4 w-4" /><span className="text-sm">Days on Market</span></div><div className="font-semibold text-foreground">{property.days_on_market || 0}</div></div>
                 </div>
                 {property.features?.length > 0 && (
                   <div>
-                    <div className="text-xs text-slate-500 mb-2">Features</div>
+                    <div className="text-xs text-muted-foreground mb-2">Features</div>
                     <div className="flex flex-wrap gap-1.5">
                       {property.features.slice(0, 5).map((feature, i) => (
-                        <Badge key={i} variant="secondary" className="text-xs bg-slate-100 text-slate-700">{feature}</Badge>
+                        <Badge key={i} variant="secondary" className="text-xs bg-muted text-muted-foreground">{feature}</Badge>
                       ))}
                     </div>
                   </div>
                 )}
                 <Link to={createPageUrl('PropertyDetail') + `?id=${property.id}`}>
-                  <Button className="w-full bg-slate-800 hover:bg-slate-700">View Full Details</Button>
+                  <Button className="w-full bg-secondary hover:bg-[var(--crandell-ink-hover)]">View Full Details</Button>
                 </Link>
               </CardContent>
             </Card>
