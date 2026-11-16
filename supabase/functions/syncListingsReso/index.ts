@@ -1,5 +1,6 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { supabaseAdmin, corsHeaders, jsonResponse } from '../_shared/supabaseAdmin.ts';
+import { SPARK_RESO_BASE, sparkToken, sparkFetch, isStrictlyActive } from '../_shared/spark.ts';
 
 /**
  * syncListingsReso — durable Active-listings sync via the RESO Web API.
@@ -29,7 +30,7 @@ import { supabaseAdmin, corsHeaders, jsonResponse } from '../_shared/supabaseAdm
  * (Media[] instead of Photos[]).
  */
 
-const RESO = 'https://replication.sparkapi.com/Reso/OData/Property';
+const RESO = `${SPARK_RESO_BASE}/Property`;
 const RESO_TOP = 100;             // listings per page (Media expand is heavy)
 const DB_BATCH = 100;
 const TIME_BUDGET_MS = 35_000;    // process pages until this, then save + return
@@ -219,8 +220,7 @@ serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
   const start = Date.now();
   try {
-    const token = Deno.env.get('SPARK_OAUTH_ACCESS_TOKEN');
-    if (!token) throw new Error('SPARK_OAUTH_ACCESS_TOKEN not set');
+    const token = sparkToken();
     const body = await req.json().catch(() => ({}));
     const mode = body.mode === 'incremental' ? 'incremental' : 'full';
 
@@ -258,7 +258,8 @@ serve(async (req) => {
         const untilMs = Math.min(Date.now(), sinceMs + MAX_WINDOW_MS);
         since = new Date(sinceMs).toISOString();
         until = new Date(untilMs).toISOString();
-        const filter = `ModificationTimestamp gt ${since} and ModificationTimestamp lt ${until}`;
+        // Spark docs: always bound the window on both sides and wrap it in parens.
+        const filter = `(ModificationTimestamp gt ${since} and ModificationTimestamp lt ${until})`;
         nextUrl = `${RESO}?$count=true&$top=${RESO_TOP}&$expand=Media&$filter=${encodeURIComponent(filter)}`;
       }
 
@@ -267,13 +268,14 @@ serve(async (req) => {
       let odataCount: number | null = null;
       let pages = 0;
       while (nextUrl && (Date.now() - start) < TIME_BUDGET_MS) {
-        const res = await fetch(nextUrl, { headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' } });
+        const res = await sparkFetch(nextUrl, token);
         if (!res.ok) throw new Error(`RESO ${res.status}: ${(await res.text()).slice(0, 200)}`);
         const data = await res.json();
         if (odataCount === null) odataCount = data['@odata.count'] ?? null;
         for (const rec of (data.value || [])) {
-          const isActive = (rec.StandardStatus || rec.MlsStatus || '').toLowerCase().includes('active');
-          if (isActive) { const r = buildRow(rec); if (r) upserts.push(r); }
+          // Exact match: "ActiveUnderContract" must NOT count as Active, or it
+          // gets upserted here and then deleted again by the daily purge.
+          if (isStrictlyActive(rec)) { const r = buildRow(rec); if (r) upserts.push(r); }
           else if (rec.ListingKey) deletes.push(rec.ListingKey);
         }
         nextUrl = data['@odata.nextLink'] || null;
@@ -322,7 +324,7 @@ serve(async (req) => {
     let totalSoFar = cur.full_synced || 0;
 
     while (nextUrl && (Date.now() - start) < TIME_BUDGET_MS) {
-      const res = await fetch(nextUrl, { headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' } });
+      const res = await sparkFetch(nextUrl, token);
       if (!res.ok) throw new Error(`RESO ${res.status}: ${(await res.text()).slice(0, 200)}`);
       const data = await res.json();
       if (odataCount === null) odataCount = data['@odata.count'] ?? null;
